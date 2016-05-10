@@ -1,0 +1,65 @@
+In a package I have 2 files:
+
+gpspipe.go:
+
+----------------- gpspipe.go begins below this line ------------------------
+// +build !windows
+// +build linux
+// +build darwin
+// +build freebsd
+package daemon
+
+type GpsJsonConfig struct {
+    //struct fields ...
+}
+
+type GpsPipeCmd struct {
+    //struct fields ...
+}
+
+func (cmd *GpsPipeCmd) run() error {
+    //GOOS: linux, darwin and freebsd code here
+    return nil
+}
+
+func (cmd *GpsPipeCmd) init() error {
+    //GOOS: linux, darwin and freebsd code here
+    return nil
+}
+
+
+gpspipe_windows.go:
+
+import "errors"
+
+//ErrGoosWindows exists else where in another file, but is included in this example file
+var ErrGoosWindows = errors.New("content elided")
+
+----------------- gpspipe_windows.go begins below this line ------------------------
+// +build !linux !darwin !freebsd
+package daemon
+
+import "github.com/larsth/go-gpsdjson"
+
+type GpsJsonConfig struct {
+    //struct fields ..
+}
+
+type GpsPipeCmd struct {
+    //struct field
+}
+
+func (_ *GpsPipeCmd) run() error {
+	return ErrGoosWindows 
+}
+
+func (_ *GpsPipeCmd) init() error {
+	return nil
+} 
+
+---
+
+When building the package with :
+env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build
+
+Go 1.6.3

@@ -1,0 +1,113 @@
+rmsggpsd
+
+NOTE TO self:
+gpsd_json man page er i libgps-dev pakken
+
+rmsggpsdjson-config-file.go:70: The enviroment variable 'RMSGGPSD_JSONCONF' does not exists.
+start.go:50: Error reading the JSON configuration file.
+rmsggpsd.go:25: FATAL ERROR
+
+
+----------------------------
+
+RMSGGPSD_JSONCONF="" rmsggpsd
+
+rmsggpsdjson-config-file.go:76: The enviroment variable 'RMSGGPSD_JSONCONF' has no content.
+start.go:50: Error reading the JSON configuration file.
+rmsggpsd.go:25: FATAL ERROR
+
+
+----------------------------
+
+ls foobar.json
+
+ls: kan ikke tilgå foobar.json: Ingen sådan fil eller filkatalog
+
+-+-
+
+RMSGGPSD_JSONCONF="foobar.json" rmsggpsd
+
+rmsggpsd open foobar.json: no such file or directory
+json-config-file.go:81: Cannot open the JSON configuration file.
+start.go:50: Error reading the JSON configuration file.
+rmsggpsd.go:25: FATAL ERROR
+
+---------------------------
+
+JSON konfigurationsfil med en fejl i:
+
+følgende er ukorrekt: 
+	"version":"1.0.0",
+(Kommaet til sidst er en syntax fejl / skal ikke være der)
+
+RMSGGPSD_JSONCONF="example.json" rmsggpsd
+
+rmsggpsd invalid character '}' looking for beginning of object key string
+json-config-file.go:93: Cannot unmarshal the JSON configuration file.
+start.go:50: Error reading the JSON configuration file.
+rmsggpsd.go:25: FATAL ERROR
+
+---------------------------
+
+Korrekt 'JSON konfigurationsfil, men med en IPv6 adresse som styresystemet ikke kan levere:
+
+rmsggpsd listen tcp [::128]:12345: bind: cannot assign requested address
+start.go:37: Cannot start the web server.
+start.go:88: Cannot start the web server.
+rmsggpsd.go:25: FATAL ERROR
+
+---------------------------
+
+ls -l example.json
+
+-rw-rw-r-- 1 lars lars 157 apr 21 20:38 example.json
+
+-+-
+
+which gpspipe
+
+(returnerer ikke noget, så det program eksisterer ikke i en mappe, der er i PATH miljø variablen)
+
+-+-
+
+RMSGGPSD_JSONCONF="example.json" rmsggpsd
+
+rmsggpsd fork/exec : no such file or directory
+gpspipe.go:121: FATAL ERROR, gpspipe go routine: Cannot start external command: 'gpspipe'
+
+
+-------------------------
+
+# Installation af gpsd og gpspipe
+
+## Installation af gpsd
+
+sudo apt-get --assume-yes install gpsd
+
+## Installation af gpspipe
+
+Installation af gpspipe er et større problem.
+
+Programmet findes i en pakke der hedder gpsd-clients, men den pakke har en afhængighed på pakkerne: pytho-gtk2 og python-cairo
+
+De 2 pakker trækker Python fortolkeren, LXDE desktoppen, X serveren, samt GTK+ ind, hvilket er flere 100 MB.
+Tilmed startes X serveren og LXDE også og sluger både masser af RAM, samt processor saft. Den går ikke.
+
+Af den grund man må kryds-oversætte gpspipe på en PC med et Linux styresystem for at undgå de afhængigheder.
+
+1) Følgende installeres på host systemet (det styresystem hvor kryds-oversættelsen sker på):
+
+sudo apt-get --assume-yes install build-essential gcc-4.8-arm-linux-gnueabihf wget gnupg
+
+2) Lav en mappe hvor kryds oversættelsen sker i, og gå ind i den nyoprettede mappe:
+mkdir -p ~/gpsd-build; cd ~/gpsd-build
+
+3) Hent kildekoden til gpsd, og dermed også gpspipe:
+wget http://download-mirror.savannah.gnu.org/releases/gpsd/gpsd-3.16.tar.gz
+wget http://download-mirror.savannah.gnu.org/releases/gpsd/gpsd-3.16.tar.gz.sig
+
+4) Tjek at der ikke er fusket med kildekoden (hint: en bagdør eller lignede malware):
+gpg --verify gpsd-3.16.tar.gz.sig gpsd-3.16.tar.gz
+
+5) Konfigurér softwaren:
+

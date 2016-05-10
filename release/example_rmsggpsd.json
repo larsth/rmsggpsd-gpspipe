@@ -1,0 +1,14 @@
+{
+	"application":{
+		"name":"rmsggpsd",
+		"version":"1.0.0"
+	},
+	"gpspipe":{
+		"exec-filename":"/usr/bin/gpspipe",
+		"exec-args":[
+			"-l", "-w"
+		],
+		"ticker-duration":"1s"
+	},
+	"httpd-addr":"[::]:12345"
+}

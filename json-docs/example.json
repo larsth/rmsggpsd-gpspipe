@@ -1,0 +1,14 @@
+{
+	"gpspipe":{
+		"exec-filename":"/usr/bin/gpspipe",
+		"exec-args":[
+			"-l", "-w"
+		],
+		"ticker-duration":"1s"
+	},
+	"daemon":{
+		"workers":32,
+		"net":"tcp6",
+		"addr":"[ip6-localhost]:12345"
+	}
+}
