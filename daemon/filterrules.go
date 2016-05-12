@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/larsth/go-gpsdfilter"
-	"github.com/larsth/rmsggpsd/errors"
+	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
 var filter *gpsdfilter.Filter

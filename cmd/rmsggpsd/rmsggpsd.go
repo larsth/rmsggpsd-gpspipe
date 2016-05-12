@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/larsth/rmsggpsd/daemon"
-	"github.com/larsth/rmsggpsd/errors"
+	"github.com/larsth/rmsggpsd-gpspipe/daemon"
+	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
 var c daemon.JsonConfig

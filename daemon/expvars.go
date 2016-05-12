@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/larsth/go-rmsggpsbinmsg"
-	"github.com/larsth/rmsggpsd/expvar"
+	"github.com/larsth/rmsggpsd-gpspipe/expvar"
 )
 
 var (

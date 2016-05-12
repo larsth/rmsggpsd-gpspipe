@@ -1,7 +1,7 @@
 package daemon
 
-import "github.com/larsth/rmsggpsd/errors"
-import "github.com/larsth/rmsggpsd/env"
+import "github.com/larsth/rmsggpsd-gpspipe/errors"
+import "github.com/larsth/rmsggpsd-gpspipe/env"
 
 var (
 	ErrNilFilter    = errors.New("The *gpsdfilter.Filer is a nil pointer")

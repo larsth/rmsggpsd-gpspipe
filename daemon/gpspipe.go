@@ -1,7 +1,3 @@
-// +build !windows
-// +build linux
-// +build darwin
-// +build freebsd
 package daemon
 
 import (
@@ -14,7 +10,7 @@ import (
 	"time"
 
 	"github.com/larsth/go-gpsdjson"
-	"github.com/larsth/rmsggpsd/errors"
+	"github.com/larsth/rmsggpsd-gpspipe/errors"
 	"github.com/larsth/writeerror"
 )
 

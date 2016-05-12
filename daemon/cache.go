@@ -6,7 +6,7 @@ import (
 
 	"github.com/larsth/go-gpsfix"
 	"github.com/larsth/go-rmsggpsbinmsg"
-	"github.com/larsth/rmsggpsd/errors"
+	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
 type binMsgCache struct {

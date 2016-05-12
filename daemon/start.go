@@ -6,8 +6,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/larsth/go-rmsggpsbinmsg"
-	"github.com/larsth/rmsggpsd/errors"
-	"github.com/larsth/rmsggpsd/expvar"
+	"github.com/larsth/rmsggpsd-gpspipe/errors"
+	"github.com/larsth/rmsggpsd-gpspipe/expvar"
 )
 
 var (

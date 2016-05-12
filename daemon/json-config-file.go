@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/larsth/go-gpsfix"
-	"github.com/larsth/rmsggpsd/errors"
+	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
 type (
