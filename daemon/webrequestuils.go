@@ -28,24 +28,6 @@ func isGETHttpMethod(req *http.Request, w http.ResponseWriter) (ok bool) {
 	return true
 }
 
-func getChachedBinMsg(w http.ResponseWriter) (binMessage *binmsg.Message, ok bool) {
-	var (
-		err error
-		msg string
-	)
-
-	if binMessage, err = cache.Get(); err != nil {
-		msg = fmt.Sprintf(
-			"Cannot get binary message from the cache, Error %s.",
-			err.Error())
-		http.Error(w, msg, http.StatusInternalServerError)
-		log.Println(msg)
-
-		return nil, false
-	}
-	return binMessage, true
-}
-
 //write Date* HTTP headers
 func writeDateResponseHeaders(w http.ResponseWriter, binMessage *binmsg.Message) {
 	var nowUTC time.Time = time.Now().UTC()

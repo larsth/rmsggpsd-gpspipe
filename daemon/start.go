@@ -68,14 +68,14 @@ func Start(c *JsonConfig) error {
 		binMessage.Gps.Latitude = c.Gps.Lat
 		binMessage.Gps.Longitude = c.Gps.Lon
 		binMessage.Gps.FixMode = c.Gps.FixMode
-		cache.Put(binMessage)
+		_ = thisGpsCache.Put(binMessage)
 	}
 
 	if c.GpsPipeCmd != nil {
-		if err = c.GpsPipeCmd.init(); err != nil {
-			return errors.Annotate(err,
-				`Cannot init external gpspipe command.`)
-		}
+		//		if err = c.GpsPipeCmd.init(); err != nil {
+		//			return errors.Annotate(err,
+		//				`Cannot init external gpspipe command.`)
+		//		}
 
 		if err = c.GpsPipeCmd.run(); err != nil {
 			return errors.Annotate(err,

@@ -46,14 +46,9 @@ func binMsgWebRequestHandler(
 }
 
 func rootWebRequestHandler(w http.ResponseWriter, req *http.Request) {
-	var (
-		ok         bool
-		binMessage *binmsg.Message
-	)
+	var binMessage *binmsg.Message
 
-	if binMessage, ok = getChachedBinMsg(w); !ok {
-		return
-	}
+	binMessage = thisGpsCache.Get()
 
 	binMsgWebRequestHandler(w, req, binMessage)
 	return
