@@ -5,8 +5,6 @@ import (
 	"io"
 	"log"
 	"os/exec"
-	"runtime"
-	"strings"
 	"sync"
 	"time"
 
@@ -34,10 +32,6 @@ func (cmd *GpsPipeCmd) run() error {
 	cmd.mutex.Lock()
 	defer cmd.mutex.Unlock()
 
-	if strings.Compare(runtime.GOOS, "windows") == 0 {
-		return ErrGoosWindows
-	}
-
 	if cmd.isRunning == false {
 		go gpsPipe(cmd)
 		cmd.isRunning = true
@@ -57,10 +51,6 @@ func (cmd *GpsPipeCmd) init() error {
 
 	cmd.mutex.Lock()
 	defer cmd.mutex.Unlock()
-
-	if strings.Compare(runtime.GOOS, "windows") == 0 {
-		return nil
-	}
 
 	if cmd.isRunning == false {
 		cmd.Cmd = exec.Command(
@@ -152,11 +142,6 @@ func gpsPipe(cmd *GpsPipeCmd) {
 			if len(gpsdErr) > 0 {
 				log.Printf("gpsd error: %s", gpsdErr)
 			}
-
-			runtime.Gosched() //run another go routine
-		default:
-			//To avoid a deadlock on single-core microprocessors ...
-			runtime.Gosched() //run another go routine
 		}
 	}
 }
