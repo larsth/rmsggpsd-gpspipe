@@ -23,9 +23,10 @@ type GpsPipeCmd struct {
 	GpsJsonConfig GpsJsonConfig `json:"gpspipe"`
 	Cmd           *exec.Cmd     `json:"-"`
 	StdOutPipe    io.ReadCloser `json:"-"`
-	Ed            *extractData  `json:"-"`
-	isRunning     bool          `json:"-"`
-	mutex         sync.Mutex    `json:"-"`
+	c
+	//Ed            *extractData  `json:"-"`
+	isRunning bool       `json:"-"`
+	mutex     sync.Mutex `json:"-"`
 }
 
 func (cmd *GpsPipeCmd) run() error {
