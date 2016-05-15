@@ -27,7 +27,7 @@ type (
 	JsonConfig struct {
 		Application Application `json:"application"`
 		HttpAddr    string      `json:"httpd-addr"`
-		GpsPipeCmd  *GpsPipeCmd `json:"gpspipe"`
+		GpsPipeCmd  *GpsPipe `json:"gpspipe"`
 		Gps         *GpsCoord   `json:"gps-coord"`
 	}
 )

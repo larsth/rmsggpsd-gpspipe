@@ -11,37 +11,64 @@ import (
 	"github.com/larsth/writeerror"
 )
 
-type GpsJsonConfig struct {
+type GpsPipeConfig struct {
 	ExecFileName   string            `json:"exec-filename"`
 	ExecArgs       []string          `json:"exec-args"`
 	TickerDuration gpsdjson.Duration `json:"ticker-duration,string"`
 }
 
-type GpsPipeCmd struct {
-	GpsJsonConfig GpsJsonConfig `json:"gpspipe"`
-	Cmd           *exec.Cmd     `json:"-"`
-	StdOutPipe    io.ReadCloser `json:"-"`
-	isRunning     bool          `json:"-"`
-	mutex         sync.Mutex    `json:"-"`
+type GpsPipe struct {
+	mutex      sync.Mutex    `json:"-"`
+	hadRunOnce bool          `json:"-"`
+	Cmd        *exec.Cmd     `json:"-"`
+	StdOutPipe io.ReadCloser `json:"-"`
+	Config     GpsPipeConfig `json:"gpspipe"`
 }
 
-func (cmd *GpsPipeCmd) run() error {
-	cmd.mutex.Lock()
-	defer cmd.mutex.Unlock()
+func (g *GpsPipe) init() error {
+	var (
+		err error
+	)
 
-	if cmd.isRunning == false {
-		go gpsPipe(cmd)
-		cmd.isRunning = true
-		return nil
-	} else {
-		return errors.Annotatef(ErrIsRunning, "%s: %s",
-			"(ErrIsRunning): Cannot (*daemon.GpsPipeCmd).Run()",
-			"Is already running")
+	if len(g.Config.ExecArgs) == 0 {
+		return errors.Annotate(err, "Zero arguments used to run the"+
+			"the external gpspipe program.")
 	}
+	g.Cmd = exec.Command(g.Config.ExecFileName, g.Config.ExecArgs...)
+	if g.StdOutPipe, err = g.Cmd.StdoutPipe(); err != nil {
+		return errors.Annotate(err, "Cannot get the standard OUT pipe"+
+			"used to read from the the external gpspipe program.")
+	}
+	if err = g.Cmd.Start(); err != nil {
+		return errors.Annotate(err, "Cannot start "+
+			"the external gpspipe program.")
+	}
+	return nil
 }
 
-//gpsPipe is a go routine that "speaks" with the external gpspipe program.
-func gpsPipe(cmd *GpsPipeCmd) {
+func (g *GpsPipe) run() error {
+	var (
+		err error
+	)
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	if !g.hadRunOnce {
+		if err = g.init(); err != nil {
+			return errors.Annotate(err, "Cannot init *daemon.GpsPipeCmd")
+		}
+		go pipe(g)
+		g.hadRunOnce = true
+		return nil
+	}
+	return errors.Annotatef(ErrIsRunning, "%s: %s",
+		"(ErrIsRunning): Cannot (*daemon.GpsPipeCmd).Run()",
+		"Is already running.")
+}
+
+//pipe is a go routine that read gpsd JSON documents via
+//the external gpspipe program.
+func pipe(cmd *GpsPipe) {
 	const cutDuration = time.Duration(time.Millisecond * 200)
 	var (
 		ticker       *time.Ticker
@@ -59,10 +86,10 @@ func gpsPipe(cmd *GpsPipeCmd) {
 		return //kill this go routine
 	}
 
-	if cmd.GpsJsonConfig.TickerDuration.D < cutDuration {
+	if cmd.Config.TickerDuration.D < cutDuration {
 		d = cutDuration
 	} else {
-		d = cmd.GpsJsonConfig.TickerDuration.D
+		d = cmd.Config.TickerDuration.D
 	}
 	ticker = time.NewTicker(d)
 
