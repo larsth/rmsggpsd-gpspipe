@@ -1,8 +1,6 @@
 package daemon
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -35,12 +33,6 @@ func writeDateResponseHeaders(w http.ResponseWriter, binMessage *binmsg.Message)
 	w.Header().Set("Date", nowUTC.Format(rfc7231))
 	w.Header().Set("Date-RFC-3339", nowUTC.Format(time.RFC3339))
 	w.Header().Set("Date-RFC3339-Nano", nowUTC.Format(time.RFC3339Nano))
-	w.Header().Set(
-		"Date-Bin-Msg-RFC3339",
-		binMessage.TimeStamp.Time.Format(time.RFC3339))
-	w.Header().Set(
-		"Date-Bin-Msg-RFC3339Nano",
-		binMessage.TimeStamp.Time.Format(time.RFC3339Nano))
 }
 
 func parseForm(req *http.Request, w http.ResponseWriter) (ok bool) {
@@ -51,131 +43,38 @@ func parseForm(req *http.Request, w http.ResponseWriter) (ok bool) {
 	if err = req.ParseForm(); err != nil {
 		msg = fmt.Sprintf("Cannot parse HTTP GET query, Error %s.", err.Error())
 		http.Error(w, msg, http.StatusInternalServerError)
-		log.Println(msg)
+		HttpdLogger.Println(msg)
 		return false
 	}
 	return true
 }
 
-func writeJSONHttpResponse(w http.ResponseWriter, binMessage *binmsg.Message) {
+func writeXWwwFormUrlencodedHttpResponse(w http.ResponseWriter) {
 	var (
-		p    []byte
-		err  error
-		msg  string
-		pLen string
+		m                               *binmsg.Message
+		fixmode, alt, lat, lon, gpstime string
+		bearingTime                     time.Time
+		bearing                         float64
+		bearingTimeString               string
+		bearingString                   string
+		values                          url.Values
+		p                               []byte
+		pLen                            string
 	)
 
-	w.Header().Set("Content-Type", "application/json")
-	if p, err = json.Marshal(binMessage); err != nil {
-		msg = `Cannot parse the binary message into a JSON GET query, Error: `
-		msg = fmt.Sprintf("%s '%s'.\n", msg, err.Error())
-		http.Error(w, msg, http.StatusInternalServerError)
-		log.Println(msg)
-		return
-	}
+	m = thisGpsCache.Get()
+	fixmode, alt, lat, lon, gpstime = m.Strings()
+	bearing, bearingTime = bearingCache.Get()
+	bearingString = strconv.FormatFloat(bearing, 'f', -1, 32)
+	bearingTimeString = bearingTime.Format(time.RFC3339)
 
-	pLen = strconv.Itoa(len(p))
-	w.Header().Set("Content-Length", pLen)
-	if len(p) > 0 {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(p)
-	}
-
-	return
-}
-
-func writeBinMsgHttpResponse(w http.ResponseWriter, binMessage *binmsg.Message) {
-	var (
-		p    []byte
-		err  error
-		msg  string
-		pLen string
-	)
-
-	//Tell a User-Agent (browser) to not to display
-	//the body, but save the body to a file.
-	w.Header().Set("Content-Disposition", "attachment")
-
-	if p, err = binMessage.MarshalBinary(); err != nil {
-		msg = fmt.Sprintf(
-			"Cannot marshal *binmsg.Message to a binary representation, Error %s.",
-			err.Error())
-		http.Error(w, msg, http.StatusInternalServerError)
-		log.Println(msg)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/x.rmsgdk.binmsg")
-	w.Header().Set("Content-Transfer-Encoding", "binary")
-
-	pLen = strconv.Itoa(len(p))
-	w.Header().Set("Content-Length", pLen)
-	if len(p) > 0 {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(p)
-	}
-	return
-}
-
-func writeCSVHttpResponse(w http.ResponseWriter, binMessage *binmsg.Message) {
-	var (
-		fixmode, alt, lat, lon, timestamp = binMessage.Strings()
-		buf                               bytes.Buffer
-		p                                 []byte
-		pLen                              string
-	)
-	//Construct message
-	buf.WriteString("fixmode")
-	buf.WriteString(":")
-	buf.WriteString(fixmode)
-	buf.WriteString("\n")
-
-	buf.WriteString("alt")
-	buf.WriteString(":")
-	buf.WriteString(alt)
-	buf.WriteString("\n")
-
-	buf.WriteString("lat")
-	buf.WriteString(":")
-	buf.WriteString(lat)
-	buf.WriteString("\n")
-
-	buf.WriteString("lon")
-	buf.WriteString(":")
-	buf.WriteString(lon)
-	buf.WriteString("\n")
-
-	buf.WriteString("timestamp_RFC3339")
-	buf.WriteString(":")
-	buf.WriteString(timestamp)
-	buf.WriteString("\n")
-
-	w.Header().Set("Content-Type", "text/csv")
-
-	p = buf.Bytes()
-	pLen = strconv.Itoa(len(p))
-	w.Header().Set("Content-Length", pLen)
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(p)
-	return
-}
-
-func writeXWwwFormUrlencodedHttpResponse(
-	w http.ResponseWriter,
-	binMessage *binmsg.Message) {
-
-	var (
-		fixmode, alt, lat, lon, timestamp = binMessage.Strings()
-		values                            url.Values
-		p                                 []byte
-		pLen                              string
-	)
-
-	values.Set("fixmode", fixmode)
-	values.Set("alt", alt)
-	values.Set("lat", lat)
-	values.Set("lon", lon)
-	values.Set("timestamp_rfc3339", timestamp)
+	values.Set("bearing", bearingString)
+	values.Set("bearingtime", bearingTimeString)
+	values.Set("gpsaltitude", alt)
+	values.Set("gpsfixmode", fixmode)
+	values.Set("gpslatitude", lat)
+	values.Set("gpslongitude", lon)
+	values.Set("gpstime", gpstime)
 
 	w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -185,6 +84,11 @@ func writeXWwwFormUrlencodedHttpResponse(
 	w.Header().Set("Content-Length", pLen)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(p)
+
+	return
+}
+
+func httpRequestHandler(w http.ResponseWriter, req *http.Request) {
 
 	return
 }

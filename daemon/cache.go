@@ -4,6 +4,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/larsth/go-rmsggpsbinmsg"
 	"github.com/larsth/rmsggpsd-gpspipe/cache"
 )
 
@@ -11,15 +12,17 @@ var (
 	thisGpsCache  *cache.BinMsg
 	otherGpsCache *cache.BinMsg
 	bearingCache  *cache.Bearing
+	thisChan      chan *binmsg.Message
+	otherChan     chan *binmsg.Message
 )
 
 func init() {
-	thisGpsCache = new(cache.BinMsg)
-	thisGpsCache.Put(cache.MkFixNotSeenMessage())
+	thisChan = make(chan *binmsg.Message, 1)
+	otherChan = make(chan *binmsg.Message, 1)
 
-	otherGpsCache = new(cache.BinMsg)
-	otherGpsCache.Put(cache.MkFixNotSeenMessage())
+	thisGpsCache, _ = cache.NewBinMsg(thisChan)
+	otherGpsCache, _ = cache.NewBinMsg(otherChan)
 
 	bearingCache = new(cache.Bearing)
-	bearingCache.Put(float64(4*math.Pi), time.Unix(0, 0))
+	bearingCache.Put(math.NaN(), time.Unix(0, 0))
 }

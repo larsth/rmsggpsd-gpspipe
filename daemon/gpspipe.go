@@ -1,28 +1,29 @@
 package daemon
 
 import (
+	"fmt"
 	"io"
+	"log"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
 
-	"github.com/larsth/go-gpsdjson"
+	"github.com/larsth/go-rmsggpsbinmsg"
+	"github.com/larsth/linescanner"
 	"github.com/larsth/rmsggpsd-gpspipe/errors"
 	"github.com/larsth/writeerror"
 )
 
-type GpsPipeConfig struct {
-	ExecFileName   string            `json:"exec-filename"`
-	ExecArgs       []string          `json:"exec-args"`
-	TickerDuration gpsdjson.Duration `json:"ticker-duration,string"`
-}
-
 type GpsPipe struct {
-	mutex      sync.Mutex    `json:"-"`
-	hadRunOnce bool          `json:"-"`
-	Cmd        *exec.Cmd     `json:"-"`
-	StdOutPipe io.ReadCloser `json:"-"`
-	Config     GpsPipeConfig `json:"gpspipe"`
+	mutex       sync.Mutex    `json:"-"`
+	hadRunOnce  bool          `json:"-"`
+	cmd         *exec.Cmd     `json:"-"`
+	stdOutPipe  io.ReadCloser `json:"-"`
+	gpsdFilter  filter        `json:"-"`
+	lineScanner *linescanner.LineScanner
+	logger      *log.Logger
+	Config      GpsPipeConfig `json:"gpspipe"`
 }
 
 func (g *GpsPipe) init() error {
@@ -31,22 +32,24 @@ func (g *GpsPipe) init() error {
 	)
 
 	if len(g.Config.ExecArgs) == 0 {
-		return errors.Annotate(err, "Zero arguments used to run the"+
-			"the external gpspipe program.")
+		return errors.Annotate(err, `ERROR: `+
+			`Zero arguments used to run the external gpspipe program.`)
 	}
-	g.Cmd = exec.Command(g.Config.ExecFileName, g.Config.ExecArgs...)
-	if g.StdOutPipe, err = g.Cmd.StdoutPipe(); err != nil {
+	g.cmd = exec.Command(g.Config.ExecFileName, g.Config.ExecArgs...)
+	if g.stdOutPipe, err = g.cmd.StdoutPipe(); err != nil {
 		return errors.Annotate(err, "Cannot get the standard OUT pipe"+
 			"used to read from the the external gpspipe program.")
 	}
-	if err = g.Cmd.Start(); err != nil {
-		return errors.Annotate(err, "Cannot start "+
-			"the external gpspipe program.")
+
+	g.gpsdFilter = newGpsdFilter(g.logger)
+	if g.lineScanner, err = linescanner.New(g.stdOutPipe); err != nil {
+		return errors.Annotate(err, "Error while initializing the linescanner")
 	}
+
 	return nil
 }
 
-func (g *GpsPipe) run() error {
+func (g *GpsPipe) Run(logger *log.Logger) error {
 	var (
 		err error
 	)
@@ -54,10 +57,15 @@ func (g *GpsPipe) run() error {
 	defer g.mutex.Unlock()
 
 	if !g.hadRunOnce {
+		if logger == nil {
+			return errors.New("*log.Logger is nil")
+		}
+		g.logger = logger
+
 		if err = g.init(); err != nil {
 			return errors.Annotate(err, "Cannot init *daemon.GpsPipeCmd")
 		}
-		go pipe(g)
+		go gpspipeGoRoutine(g)
 		g.hadRunOnce = true
 		return nil
 	}
@@ -66,49 +74,94 @@ func (g *GpsPipe) run() error {
 		"Is already running.")
 }
 
-//pipe is a go routine that read gpsd JSON documents via
-//the external gpspipe program.
-func pipe(cmd *GpsPipe) {
-	const cutDuration = time.Duration(time.Millisecond * 200)
+func goroutineFATAL(err error, msg string) {
+	annotatedErr := errors.Annotate(err, msg)
+	s := errors.Details(annotatedErr)
+	fmt.Fprintln(os.Stderr, s)
+	writeerror.AndExit(annotatedErr, 3)
+	//does not return ...
+}
+
+func pipeInit(g *GpsPipe, d *time.Duration) error {
+	const minDuration = time.Duration(time.Millisecond * 100)
+	var err error
+
+	if err = g.cmd.Start(); err != nil {
+		return errors.Annotate(err, "Cannot start "+
+			"the external gpspipe program.")
+	}
+
+	if g.Config.TickerDuration.D < minDuration {
+		*d = minDuration
+	} else {
+		*d = g.Config.TickerDuration.D
+	}
+	return nil
+}
+
+func (g *GpsPipe) readJson() (p []byte, err error) {
+	const maxLoops = 128
+
+	for g.lineScanner.Scan() {
+		if g.lineScanner.ReadCount() > maxLoops {
+			return nil, errors.Errorf(
+				"line scanner, maximum of loops exceeded: %d loops",
+				maxLoops)
+		}
+	}
+	if g.lineScanner.Err() != nil {
+		return nil, errors.Annotate(g.lineScanner.Err(), "linescanner error")
+	}
+	return g.lineScanner.Bytes(), nil
+}
+
+func (g *GpsPipe) pipeAction(ticker *time.Ticker) error {
 	var (
-		ticker       *time.Ticker
-		err          error
-		annotatedErr error
-		d            time.Duration
+		p   []byte
+		err error
+		m   *binmsg.Message
 	)
 
-	if err = cmd.Cmd.Start(); err != nil {
-		annotatedErr = errors.Annotatef(err, "%s: %s",
-			"FATAL ERROR, gpspipe go routine",
-			"Cannot start external command: 'gpspipe'")
+	select {
+	case _ = <-ticker.C:
+		if p, err = g.readJson(); err != nil {
+			return errors.Annotate(err, `Cannot read a gpsd JSON document`)
+		}
+		if m, err = g.gpsdFilter.ParseGpsdJson(p); err != nil {
+			return errors.Annotate(err, `Cannot parse a gpsd JSON document`)
+		}
+		if m != nil {
+			//save this GPS coordinate to the cache
+			thisGpsCache.Put(m)
+		}
+	}
+	return nil
+}
 
-		writeerror.AndExit(annotatedErr, 3)
-		return //kill this go routine
+//pipe is a go routine that read gpsd JSON documents via
+//the external gpspipe program.
+func gpspipeGoRoutine(g *GpsPipe) {
+	var (
+		err    error
+		ticker *time.Ticker
+		d      time.Duration
+	)
+
+	if err = pipeInit(g, &d); err != nil {
+		goroutineFATAL(err, "FATAL ERROR, gpspipe go routine: Cannot init")
+		//pipeFATAL does not return, but make it clear that this go routine is killed
+		return
 	}
 
-	if cmd.Config.TickerDuration.D < cutDuration {
-		d = cutDuration
-	} else {
-		d = cmd.Config.TickerDuration.D
-	}
 	ticker = time.NewTicker(d)
 
 	//loop for infinity, or until an error occurs ...
 	for {
-		select {
-		case _ = <-ticker.C:
-			//			//A 'cmd.Config.TickerDuration.Duration' duration of time had elapsed ...
-			//			//Read from the gpspipe external executable's standard output (STDOUT):
-			//			if gpsdErr, err = gpsPipePutMessage(cmd); err != nil {
-			//				annotatedErr = errors.Annotatef(err, "%s: %s",
-			//					"go routine: daemon.gpsPipe(cmd *GpsPipeCmd)",
-			//					"daemon.gpsPipePutMessage(*GpsPipeCmd) FATAL error")
-			//				defer writeerror.AndExit(annotatedErr, 4)
-			//				return //kill this go routine
-			//			}
-			//			if len(gpsdErr) > 0 {
-			//				log.Printf("gpsd error: %s", gpsdErr)
-			//			}
+		if err = g.pipeAction(ticker); err != nil {
+			msg := "FATAL ERROR, gpspipe go routine, pipe action error"
+			goroutineFATAL(err, msg)
+			//pipeFATAL does not return, but make it clear that this go routine is killed
+			return
 		}
 	}
 }

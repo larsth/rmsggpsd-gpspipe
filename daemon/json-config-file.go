@@ -7,28 +7,43 @@ import (
 	"os"
 	"strings"
 
+	"github.com/larsth/go-gpsdjson"
 	"github.com/larsth/go-gpsfix"
 	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
 type (
-	GpsCoord struct {
+	ApplicationConfig struct {
+		Name    string `json:"name"`
+		Version string `json:"version"`
+	}
+
+	AddrLoggerConfig struct {
+		AddrString     string            `json:"addr"`
+		LoggerString   string            `json:"logger"`
+		TickerDuration gpsdjson.Duration `json:"ticker-duration"`
+	}
+
+	GpsCoordConfig struct {
 		Alt     float32        `json:"altitude"`
 		Lat     float32        `json:"latitude"`
 		Lon     float32        `json:"longitude"`
 		FixMode gpsfix.FixMode `json:"fixmode,string"`
 	}
 
-	Application struct {
-		Name    string `json:"name"`
-		Version string `json:"version"`
+	GpsPipeConfig struct {
+		ExecFileName   string            `json:"exec-filename"`
+		ExecArgs       []string          `json:"exec-args"`
+		TickerDuration gpsdjson.Duration `json:"ticker-duration,string"`
+		Logger         string            `json:"logger"`
 	}
 
 	JsonConfig struct {
-		Application Application `json:"application"`
-		HttpAddr    string      `json:"httpd-addr"`
-		GpsPipeCmd  *GpsPipe `json:"gpspipe"`
-		Gps         *GpsCoord   `json:"gps-coord"`
+		Application ApplicationConfig `json:"application"`
+		Httpd       AddrLoggerConfig  `json:"httpd"`
+		OtherGps    AddrLoggerConfig  `json:"other-gps"`
+		GpsPipe     *GpsPipe          `json:"gpspipe"`
+		ThisGps     *GpsCoordConfig   `json:"this-gps"`
 	}
 )
 
@@ -37,7 +52,7 @@ const (
 	expectedJsonVersion = `1.0.0`
 )
 
-func checkIsARmsggpsdJsonDocument(a *Application) error {
+func checkIsRmsggpsdJsonDocument(a *ApplicationConfig) error {
 	if strings.Compare("rmsggpsd", a.Name) != 0 {
 		return errors.Errorf("%s./nWant: \"rmsggpsd\"\nGot: \"%s\"",
 			`Invalid application name in the JSON document: `,
@@ -93,19 +108,8 @@ func readJsonConfigDocument(c *JsonConfig) error {
 			`Cannot unmarshal the JSON configuration file.`)
 	}
 
-	if err = checkIsARmsggpsdJsonDocument(&c.Application); err != nil {
-		s := `{
-	"application":{
-		"name":"rmsggpsd",
-		"version":"1.0.0",
-	},
-	"gpspipe":{},
-	"httpd-addr":"An IPv6 address goes here"
-}`
-		return errors.Annotatef(err, "%s\nWant something like: %s\nGot:%s\n",
-			`The JSON configuration file is a \"rmsggpsd\" JSON document.`,
-			s,
-			string(p))
+	if err = checkIsRmsggpsdJsonDocument(&c.Application); err != nil {
+		return errors.Trace(err)
 	}
 
 	return nil

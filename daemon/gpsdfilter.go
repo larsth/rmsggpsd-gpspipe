@@ -28,6 +28,10 @@ func mkBinMsg(altitude, latitude, longitude float32,
 	return m
 }
 
+type filter interface {
+	ParseGpsdJson(p []byte) (*binmsg.Message, error)
+}
+
 type gpsdFilter struct {
 	mutex       sync.RWMutex
 	logger      *log.Logger
@@ -44,7 +48,7 @@ func newGpsdFilter(logger *log.Logger) *gpsdFilter {
 	return g
 }
 
-func (g *gpsdFilter) TPVGpsdJsonToBinMessage() (*binmsg.Message, error) {
+func (g *gpsdFilter) tpvGpsdJsonToBinMessage() (*binmsg.Message, error) {
 	var (
 		m   *binmsg.Message
 		t   time.Time
@@ -67,16 +71,14 @@ func (g *gpsdFilter) TPVGpsdJsonToBinMessage() (*binmsg.Message, error) {
 		g.gpsdJsonTpv.Fix,
 		t)
 
-	g.mutex.Lock()
-	g.mutex.Unlock()
-
 	return m, nil
 }
 
-func (g *gpsdFilter) ParseGpsdJson(p []byte) (error, bool) {
+func (g *gpsdFilter) ParseGpsdJson(p []byte) (*binmsg.Message, error) {
 	var (
 		class Class
 		err   error
+		m     *binmsg.Message
 	)
 
 	g.mutex.Lock()
@@ -86,18 +88,23 @@ func (g *gpsdFilter) ParseGpsdJson(p []byte) (error, bool) {
 	g.logger.Printf("#v", p)
 
 	if err = json.Unmarshal(p, &class); err != nil {
-		return errors.Annotate(err,
+		return nil, errors.Annotate(err,
 			"Cannot parse gpsd JSON document."+
-				" Finding \"class\" failed."), false
+				" Finding \"class\" failed.")
 	}
 
 	if strings.Compare("TPV", class.Class) == 0 {
 		if err = json.Unmarshal(p, g.gpsdJsonTpv); err != nil {
-			return errors.Annotate(err,
-				"Cannot parse a gpsd TPV JSON document."), false
+			return nil, errors.Annotate(err,
+				"Cannot unmarshal a gpsd TPV JSON document.")
 		}
-		return nil, true
+		if m, err = g.tpvGpsdJsonToBinMessage(); err != nil {
+			return nil, errors.Annotate(err,
+				`Cannot create a *binmsg.Message `+
+					`with data from a gpsd TPV JSON document.`)
+		}
+		return m, nil
 	}
 
-	return nil, false
+	return nil, nil
 }

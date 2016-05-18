@@ -1,8 +1,13 @@
 package daemon
 
 import (
+	"log"
 	"math"
+	"time"
 
+	"github.com/larsth/go-gpsfix"
+	"github.com/larsth/go-rmsggpsbinmsg"
+	"github.com/larsth/rmsggpsd-gpspipe/cache"
 	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
@@ -12,18 +17,23 @@ type LatLon struct {
 }
 
 /*
-bearing is a function that calculates the _inital_ bearing
+calcBearing is a function that calculates the _inital_ bearing
 from point p1(lat1, lon1) to point p2(lat2, lon2) by using the
 haversine algorithm.
 
 The bearing changes at any point between point 1 to
 point 2 and vise versa.
 
-The returned float64 value is the initial bearing in degrees (not radians).
+The returned float64 value is the initial bearing in radians (not degrees).
 */
-func bearing(p1, p2 LatLon) (float64, error) {
+func calcBearing(this, other *binmsg.Message) (float64, error) {
 	var (
 		// dLat    float64 : dLat not used. Why?
+		lat1 = this.Gps.Lat()
+		lat2 = other.Gps.Lat()
+		lon1 = this.Gps.Lon()
+		lon2 = other.Gps.Lon()
+
 		dLon    float64
 		cosLat1 float64
 		cosLat2 float64
@@ -35,12 +45,12 @@ func bearing(p1, p2 LatLon) (float64, error) {
 		err     error
 	)
 
-	//dLat = p2.Lat - p1.Lat : dLat not used. Why?
-	dLon = p2.Lon - p1.Lon
-	cosLat1 = math.Cos(p1.Lat)
-	cosLat2 = math.Cos(p2.Lat)
-	sinLat1 = math.Sin(p1.Lat)
-	sinLat2 = math.Sin(p2.Lat)
+	//dLat = p2Lat - p1Lat : dLat not used. Why?
+	dLon = lon2 - lon1
+	cosLat1 = math.Cos(lat1)
+	cosLat2 = math.Cos(lat2)
+	sinLat1 = math.Sin(lat1)
+	sinLat2 = math.Sin(lat2)
 
 	y = math.Sin(dLon) * cosLat2
 	x = (cosLat1 * sinLat2) - (sinLat1 * cosLat2 * math.Cos(dLon))
@@ -53,7 +63,8 @@ func bearing(p1, p2 LatLon) (float64, error) {
 		The algoritm below is from:
 		http://mathforum.org/library/drmath/view/55417.html , where:
 			tc1 is the inital bearing.
-		Note that dlat is NEVER used
+
+		    Note that dlat is NEVER used (why?)
 
 		dlat = lat2 - lat1
 		dlon = lon2 - lon1
@@ -72,4 +83,54 @@ func bearing(p1, p2 LatLon) (float64, error) {
 			if x < 0 then tc1 = 180
 			if x = 0 then [the 2 points are the same]
 	*/
+}
+
+func updateBearingCache(this, other *binmsg.Message, logger *log.Logger) {
+	var (
+		useTime    time.Time
+		a, b, c, d bool
+		bearing    float64
+		err        error
+	)
+
+	if this.TimeStamp.Time.Before(other.TimeStamp.Time) {
+		useTime = this.TimeStamp.Time
+	} else {
+		useTime = other.TimeStamp.Time
+	}
+
+	a = this.Gps.FixMode == gpsfix.FixNotSeen
+	b = this.Gps.FixMode == gpsfix.FixNone
+	c = this.Gps.FixMode == gpsfix.FixNotSeen
+	d = this.Gps.FixMode == gpsfix.FixNone
+
+	if a || b || c || d {
+		bearing = math.NaN()
+	} else {
+		//BUG
+		/* Also use sentinel values?, ie. : special float64 values outside 360
+		   degrees (2*Pi rad) to give extra information to http request functions?
+		*/
+		bearing, err = calcBearing(this, other)
+		if err != nil {
+			logger.Println(err)
+		}
+	}
+	bearingCache.Put(bearing, useTime)
+}
+
+func bearingGoRoutine(logger *log.Logger) {
+	var (
+		this  = cache.MkFixNotSeenMessage()
+		other = cache.MkFixNotSeenMessage()
+	)
+	updateBearingCache(this, other, logger)
+	for {
+		select {
+		case this = <-thisChan:
+			updateBearingCache(this, other, logger)
+		case other = <-otherChan:
+			updateBearingCache(this, other, logger)
+		}
+	}
 }

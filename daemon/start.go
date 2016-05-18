@@ -1,12 +1,13 @@
 package daemon
 
 import (
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/larsth/go-rmsggpsbinmsg"
-	"github.com/larsth/rmsg_gpsd_tcp/expvar"
+	_ "github.com/larsth/rmsggpsd-gpspipe/cache"
 	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
@@ -15,16 +16,31 @@ var (
 	router mux.Router
 )
 
+var HttpdLogger *log.Logger
+
+func startGpsppipe(gpspipeLogger *log.Logger, c *JsonConfig) error {
+	var (
+		err error
+	)
+	if c.GpsPipe != nil {
+		if err = c.GpsPipe.Run(gpspipeLogger); err != nil {
+			return errors.Annotate(err,
+				`Cannot start external gpspipe command.`)
+		}
+	}
+	go gpspipeGoRoutine(c.GpsPipe)
+	return nil
+}
+
 // Configure, and start the web server ...
-func startHttpd(c *JsonConfig) error {
+func startHttpd(addr string) error {
 	var (
 		err error
 	)
 
-	(&router).HandleFunc("/", rootWebRequestHandler)
-	(&router).HandleFunc("/debug/expvar", expvar.ExpvarHandler)
+	(&router).HandleFunc("/", httpRequestHandler)
 
-	(&httpd).Addr = c.HttpAddr
+	(&httpd).Addr = addr
 	(&httpd).Handler = &router
 	(&httpd).ReadTimeout = 30 * time.Second
 	(&httpd).WriteTimeout = 30 * time.Second
@@ -39,10 +55,10 @@ func startHttpd(c *JsonConfig) error {
 	return nil
 }
 
-func Start(c *JsonConfig) error {
+func Start(gpspipeLogger, otherGpslogger *log.Logger, c *JsonConfig) error {
 	var (
-		err        error
-		binMessage *binmsg.Message
+		err error
+		m   *binmsg.Message
 	)
 
 	if err = readJsonConfigDocument(c); err != nil {
@@ -50,42 +66,31 @@ func Start(c *JsonConfig) error {
 			`Error reading the JSON configuration file.`)
 	}
 
-	if len(c.HttpAddr) == 0 {
-		return errors.Annotate(err,
-			"The HTTP address is empty in the JSON configuration document")
+	if c.GpsPipe == nil && c.ThisGps == nil {
+		return errors.Annotatef(err, "%s, &s: Nothing to do!",
+			`Both the "gpspipe"`,
+			`and the "this-gps" JSON objects does not exists`)
 	}
 
-	if c.GpsPipeCmd == nil && c.Gps == nil {
-		return errors.Annotatef(err, "%s: %s!",
-			`Both the \"gpspipe\", and the \"nogps" JSON objects does not exists`,
-			`Nothing to do`)
+	if c.ThisGps != nil {
+		m = mkBinMsg(c.ThisGps.Alt,
+			c.ThisGps.Lat,
+			c.ThisGps.Lon,
+			c.ThisGps.FixMode,
+			time.Now().UTC())
+		thisGpsCache.Put(m)
 	}
 
-	if c.Gps != nil {
-		binMessage = new(binmsg.Message)
-		binMessage.TimeStamp.Time = time.Now().UTC()
-		binMessage.Gps.Altitude = c.Gps.Alt
-		binMessage.Gps.Latitude = c.Gps.Lat
-		binMessage.Gps.Longitude = c.Gps.Lon
-		binMessage.Gps.FixMode = c.Gps.FixMode
-		_ = thisGpsCache.Put(binMessage)
-	}
+	//start the 'other GPS' HTTP client
+	go httpClient(c, otherGpslogger)
 
-	if c.GpsPipeCmd != nil {
-		//		if err = c.GpsPipeCmd.init(); err != nil {
-		//			return errors.Annotate(err,
-		//				`Cannot init external gpspipe command.`)
-		//		}
-
-		if err = c.GpsPipeCmd.run(); err != nil {
-			return errors.Annotate(err,
-				`Cannot start external gpspipe command.`)
-		}
+	if err = startGpsppipe(gpspipeLogger, c); err != nil {
+		return errors.Trace(err)
 	}
 
 	//Last thing to do:
-	if err = startHttpd(c); err != nil {
-		return errors.Annotate(err, "Cannot start the web server.")
+	if err = startHttpd(c.Httpd.AddrString); err != nil {
+		return errors.Trace(err)
 	}
 
 	return nil
