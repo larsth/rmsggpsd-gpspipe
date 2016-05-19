@@ -4,9 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/juju/errors"
-
-	//"github.com/larsth/rmsggpsd-gpspipe/errors"
+	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
 type atan2TestType struct {
