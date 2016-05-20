@@ -39,43 +39,54 @@ func parseFloat32FromUrlValue(v url.Values, key string) (float32, string, error)
 
 func makeBinMsgFromUrlValues(v url.Values) (*binmsg.Message, error) {
 	var (
-		err      error
-		fixmodes string
-		times    string
-		alt      float32
-		lat      float32
-		lon      float32
-		fixmode  gpsfix.FixMode
-		t        time.Time
-		urlValue string
+		err        error
+		alt        float32
+		lat        float32
+		lon        float32
+		gpsfixmode string
+		fixmode    gpsfix.FixMode
+		gpstime    string
+		t          time.Time
+		value      string
 	)
 
-	if alt, urlValue, err = parseFloat32FromUrlValue(v, "alt"); err != nil {
-		return nil, errors.Annotate(err,
-			"Cannot parse altitude string info floating point 32 bit value")
+	alt, value, err = parseFloat32FromUrlValue(v, "gpsaltitude")
+	if err != nil {
+		return nil, errors.Annotatef(err, "%s %s %s",
+			`Cannot parse altitude string`,
+			value,
+			`into a floating point 32 bit value`)
 	}
-	if lat, urlValue, err = parseFloat32FromUrlValue(v, "lat"); err != nil {
-		return nil, errors.Annotatef(err, "%s :'%s'",
+	lat, value, err = parseFloat32FromUrlValue(v, "gpslatitude")
+	if err != nil {
+		return nil, errors.Annotatef(err, "%s %s %s",
 			`Cannot parse latitide string`,
-			urlValue,
-			`info a floating point 32 bit value`)
+			value,
+			`into a floating point 32 bit value`)
 	}
-	if lon, urlValue, err = parseFloat32FromUrlValue(v, "lon"); err != nil {
-		return nil, errors.Annotate(err,
-			"Cannot parse longitude string info floating point 32 bit value")
+	lon, value, err = parseFloat32FromUrlValue(v, "gpslongitude")
+	if err != nil {
+		return nil, errors.Annotatef(err, "%s %s %s",
+			`Cannot parse longitude string`,
+			value,
+			`into a floating point 32 bit value`)
 	}
-	if fixmodes = v.Get("fixmode"); len(fixmodes) == 0 {
+	gpsfixmode = v.Get("gpsfixmode")
+	if len(gpsfixmode) == 0 {
 		return nil, errors.New(
 			`The value from the "fixmode" key does not exist, or is empty`)
 	}
-	if fixmode, err = gpsfix.Parse(fixmodes); err != nil {
+	fixmode, err = gpsfix.Parse(gpsfixmode)
+	if err != nil {
 		return nil, errors.Annotate(err, "Cannot parse fixmode string")
 	}
-	if times = v.Get("time"); len(times) == 0 {
+	gpstime = v.Get("gpstime")
+	if len(gpstime) == 0 {
 		return nil, errors.New(
 			`The value from the "time" key does not exist, or is empty`)
 	}
-	if t, err = time.Parse(time.RFC3339, times); err != nil {
+	t, err = time.Parse(time.RFC3339, gpstime)
+	if err != nil {
 		return nil, errors.Annotatef(err, "%s %s",
 			`Could not parse RFC3339 ("2006-01-02T15:04:05Z07:00")`,
 			`encoded time string`)
@@ -95,12 +106,15 @@ func handleHttpClientResponse(addr string) error {
 	)
 
 	if r, err = http.DefaultClient.Get(addr); err != nil {
-		return errors.Annotatef(err, "%s", "TBD")
+		return errors.Annotatef(err, "%s: %s",
+			`Cannot HTTP GET from web server`, addr)
 	}
 	defer r.Body.Close()
 
 	if body, err = ioutil.ReadAll(r.Body); err != nil {
-		return errors.Annotatef(err, "%s", "TBD")
+		return errors.Annotatef(err, "%s: %s",
+			`Cannot read the HTTP body (NOT HTML!) fetched from web server`,
+			addr)
 	}
 	sbody = string(body)
 
@@ -120,7 +134,8 @@ func handleHttpClientResponse(addr string) error {
 	}
 	if m, err = makeBinMsgFromUrlValues(values); err != nil {
 		return errors.Annotate(err,
-			`Cannot make a binmsg.Message with keys from a url values`)
+			`Cannot make a binmsg.Message with keys from "+ 
+            "the associative array of url values`)
 	}
 	otherGpsCache.Put(m)
 	return nil
