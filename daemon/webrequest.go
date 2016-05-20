@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/larsth/go-rmsggpsbinmsg"
+	"github.com/larsth/rmsggpsd-gpspipe/cache"
 )
 
 const rfc7231 = `Mon, 06 Jan 2006 15:04:05 GMT`
@@ -40,27 +41,27 @@ func parseForm(req *http.Request, w http.ResponseWriter) (ok bool) {
 	return true
 }
 
-func writeXWwwFormUrlencodedHttpResponse(w http.ResponseWriter, nowUTC time.Time) {
+func writeXWwwFormUrlencodedHttpResponse(
+	w http.ResponseWriter,
+	nowUTC time.Time,
+	thisgpscache *cache.BinMsg,
+	bearingcache *cache.Bearing) {
 	var (
 		m                               *binmsg.Message
 		fixmode, alt, lat, lon, gpstime string
-		bearingTime                     time.Time
-		bearing                         float64
-		bearingTimeString               string
-		bearingString                   string
+		tBearing                        string
+		bearing                         string
 		values                          url.Values
 		p                               []byte
 		pLen                            string
 	)
 
-	m = thisGpsCache.Get()
+	m = thisgpscache.Get()
 	fixmode, alt, lat, lon, gpstime = m.Strings()
-	bearing, bearingTime = bearingCache.Get()
-	bearingString = strconv.FormatFloat(bearing, 'f', -1, 32)
-	bearingTimeString = bearingTime.Format(time.RFC3339)
+	_, _, bearing, tBearing = bearingcache.Get()
 
-	values.Set("bearing", bearingString)
-	values.Set("bearingtime", bearingTimeString)
+	values.Set("bearing", bearing)
+	values.Set("bearingtime", tBearing)
 	values.Set("gpsaltitude", alt)
 	values.Set("gpsfixmode", fixmode)
 	values.Set("gpslatitude", lat)
@@ -92,5 +93,6 @@ func httpRequestHandler(w http.ResponseWriter, req *http.Request) {
 	if !parseForm(req, w) {
 		return //response had already been written
 	}
-	writeXWwwFormUrlencodedHttpResponse(w, nowUTC)
+	//NOTE: thisGpsCache, and bearingCache are package visible variables
+	writeXWwwFormUrlencodedHttpResponse(w, nowUTC, thisGpsCache, bearingCache)
 }
