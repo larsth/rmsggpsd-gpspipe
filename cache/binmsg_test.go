@@ -10,70 +10,6 @@ import (
 
 const float64TruncatePrecision = 4
 
-func TestMkBinMsg(t *testing.T) {
-	var (
-		altitude  = float32(1.0)
-		latitude  = float32(2.0)
-		longitude = float32(3.0)
-		fixMode   = gpsfix.Fix3D
-		date      time.Time
-		m         *binmsg.Message
-	)
-	date = time.Date(2016, time.May, 5, 18, 9, 5, 0, time.Local)
-	m = mkBinMsg(altitude, latitude, longitude, fixMode, date)
-
-	if !date.Equal(m.TimeStamp.Time) {
-		t.Errorf("Got: m.Timestap.Time='%s'. Want: date='%s'",
-			m.TimeStamp.Time.String(), date.String())
-	}
-	if m.Gps.FixMode != fixMode {
-		t.Errorf("Got: '%s'. Want: '%s'",
-			m.Gps.FixMode.String(), fixMode.String())
-	}
-	if m.Gps.Altitude != altitude {
-		t.Errorf("Altitude; Got: float32(%d). Want: float32(%d)",
-			m.Gps.Altitude, altitude)
-	}
-	if m.Gps.Latitude != latitude {
-		t.Errorf("Latitude; Got: float32(%d). Want: float32(%d)",
-			m.Gps.Latitude, latitude)
-	}
-	if m.Gps.Longitude != longitude {
-		t.Errorf("Longitude; Got: float32(%d). Want: float32(%d)",
-			m.Gps.Longitude, longitude)
-	}
-}
-
-func TestMkFixNotSeenMessage(t *testing.T) {
-	var (
-		m = MkFixNotSeenMessage()
-	)
-
-	if m.TimeStamp.Time.IsZero() {
-		t.Error("Got: Timestap.Time is zero. ",
-			"Want: a non zero time.Time")
-	}
-	if m.Gps.FixMode != gpsfix.FixNotSeen {
-		t.Errorf("Got: %s. Want: FixNotSeen",
-			m.Gps.FixMode.String())
-	}
-	if m.Gps.Altitude != float32(0.0) {
-		t.Errorf("Got altitude: float32(%d). %s",
-			m.Gps.Altitude,
-			"Want altitude: float32(0.0)")
-	}
-	if m.Gps.Latitude != float32(0.0) {
-		t.Errorf("Got: latitude float32(%d). %s",
-			m.Gps.Latitude,
-			"Want latitude: float32(0.0)")
-	}
-	if m.Gps.Longitude != float32(0.0) {
-		t.Errorf("Got longitude: float32(%d). %s",
-			m.Gps.Longitude,
-			"Want longitude: float32(0.0)")
-	}
-}
-
 var (
 	binMsgMessage1 = &binmsg.Message{
 		TimeStamp: binmsg.TimeStamp{
@@ -132,8 +68,7 @@ func TestBinMsgPut1(t *testing.T) {
 
 func TestBinMsgPut2(t *testing.T) {
 	var (
-		cached            *BinMsg
-		cachedMessage     *binmsg.Message = nil
+		cached            *BinMsg         = new(BinMsg)
 		inputMessage      *binmsg.Message = binMsgMessage1
 		wantCachedMessage *binmsg.Message = binMsgMessage1
 		wantOk                            = true
@@ -142,8 +77,7 @@ func TestBinMsgPut2(t *testing.T) {
 		ok                bool
 		a                 string
 	)
-	cached = new(BinMsg)
-	cached.m = cachedMessage
+	cached.m = nil //the cached *binmsg.Message is nil
 
 	gotOk = cached.Put(inputMessage)
 	if gotOk != wantOk {

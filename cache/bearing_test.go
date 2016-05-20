@@ -84,7 +84,7 @@ func TestBearingGet(t *testing.T) {
 	)
 	b.bearing = cachedBearing
 	b.t = cachedTime
-	gotBearing, gotTime = b.Get()
+	gotBearing, gotTime, _, _ = b.Get()
 	cTxt, nTxt, ok = binmsg.IsSameFloat64(cachedBearing, gotBearing, float64TruncatePrecision)
 	if !ok {
 		t.Errorf("Cached bearing %f (%s) is not equal to the wanted bearing:  %f (%s) , precision: %d",

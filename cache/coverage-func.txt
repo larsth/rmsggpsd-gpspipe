@@ -1,0 +1,6 @@
+github.com/larsth/rmsggpsd-gpspipe/cache/bearing.go:17:	Put		100.0%
+github.com/larsth/rmsggpsd-gpspipe/cache/bearing.go:31:	Get		100.0%
+github.com/larsth/rmsggpsd-gpspipe/cache/binmsg.go:18:	NewBinMsg	0.0%
+github.com/larsth/rmsggpsd-gpspipe/cache/binmsg.go:25:	Put		86.7%
+github.com/larsth/rmsggpsd-gpspipe/cache/binmsg.go:56:	Get		100.0%
+total:							(statements)	82.4%
