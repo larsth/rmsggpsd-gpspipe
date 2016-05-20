@@ -26,15 +26,6 @@ func isGETHttpMethod(req *http.Request, w http.ResponseWriter) (ok bool) {
 	return true
 }
 
-//write Date* HTTP headers
-func writeDateResponseHeaders(w http.ResponseWriter, binMessage *binmsg.Message) {
-	var nowUTC time.Time = time.Now().UTC()
-
-	w.Header().Set("Date", nowUTC.Format(rfc7231))
-	w.Header().Set("Date-RFC-3339", nowUTC.Format(time.RFC3339))
-	w.Header().Set("Date-RFC3339-Nano", nowUTC.Format(time.RFC3339Nano))
-}
-
 func parseForm(req *http.Request, w http.ResponseWriter) (ok bool) {
 	var (
 		err error
@@ -49,7 +40,7 @@ func parseForm(req *http.Request, w http.ResponseWriter) (ok bool) {
 	return true
 }
 
-func writeXWwwFormUrlencodedHttpResponse(w http.ResponseWriter) {
+func writeXWwwFormUrlencodedHttpResponse(w http.ResponseWriter, nowUTC time.Time) {
 	var (
 		m                               *binmsg.Message
 		fixmode, alt, lat, lon, gpstime string
@@ -79,6 +70,10 @@ func writeXWwwFormUrlencodedHttpResponse(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
 	w.Header().Set("Cache-Control", "no-cache")
 
+	w.Header().Set("Date", nowUTC.Format(rfc7231))
+	w.Header().Set("Date-RFC-3339", nowUTC.Format(time.RFC3339))
+	w.Header().Set("Date-RFC3339-Nano", nowUTC.Format(time.RFC3339Nano))
+
 	p = []byte(values.Encode())
 	pLen = strconv.Itoa(len(p))
 	w.Header().Set("Content-Length", pLen)
@@ -89,6 +84,13 @@ func writeXWwwFormUrlencodedHttpResponse(w http.ResponseWriter) {
 }
 
 func httpRequestHandler(w http.ResponseWriter, req *http.Request) {
+	var nowUTC = time.Now().UTC()
 
-	return
+	if !isGETHttpMethod(req, w) {
+		return //response had already been written
+	}
+	if !parseForm(req, w) {
+		return //response had already been written
+	}
+	writeXWwwFormUrlencodedHttpResponse(w, nowUTC)
 }
