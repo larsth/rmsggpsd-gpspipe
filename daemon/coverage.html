@@ -1,0 +1,1150 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/larsth/rmsggpsd-gpspipe/daemon/atan2.go (100.0%)</option>
+				
+				<option value="file1">github.com/larsth/rmsggpsd-gpspipe/daemon/bearing.go (0.0%)</option>
+				
+				<option value="file2">github.com/larsth/rmsggpsd-gpspipe/daemon/cache.go (100.0%)</option>
+				
+				<option value="file3">github.com/larsth/rmsggpsd-gpspipe/daemon/gpsdfilter.go (0.0%)</option>
+				
+				<option value="file4">github.com/larsth/rmsggpsd-gpspipe/daemon/gpspipe.go (0.0%)</option>
+				
+				<option value="file5">github.com/larsth/rmsggpsd-gpspipe/daemon/httpclient.go (0.0%)</option>
+				
+				<option value="file6">github.com/larsth/rmsggpsd-gpspipe/daemon/json-config-file.go (0.0%)</option>
+				
+				<option value="file7">github.com/larsth/rmsggpsd-gpspipe/daemon/start.go (0.0%)</option>
+				
+				<option value="file8">github.com/larsth/rmsggpsd-gpspipe/daemon/webrequest.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package daemon
+
+import (
+        "math"
+
+        "github.com/larsth/rmsggpsd-gpspipe/errors"
+)
+
+var ErrSameLocation = errors.New("The 2 coordinates is at the same location")
+
+//atan2 is the arctangent 2 algoritm
+/* See https://en.wikipedia.org/wiki/Atan2
+Quote:
+In a variety of computer languages, the function atan2 is the arctangent
+function with two arguments. The purpose of using two arguments instead of one
+is to gather information on the signs of the inputs in order to return the
+appropriate quadrant of the computed angle, which is not possible for the
+single-argument arctangent function. It also avoids the problems of division by
+zero.
+
+For any real number (e.g., floating point) arguments x and y not both equal to
+zero, atan2(y, x) is the angle in radians between the positive x-axis of a
+plane and the point given by the coordinates (x, y) on it.
+The angle is positive for counter-clockwise angles (upper half-plane, y &gt; 0),
+and negative for clockwise angles (lower half-plane, y &lt; 0).
+
+Inputs x, y are radians
+*/
+func atan2(x, y float64) (float64, error) <span class="cov10" title="13">{
+        if y &gt; 0.0 </span><span class="cov5" title="4">{
+                if x &gt; 0.0 </span><span class="cov1" title="1">{
+                        return math.Atan((y / x)), nil
+                }</span>
+                <span class="cov4" title="3">if x &lt; 0.0 </span><span class="cov1" title="1">{
+                        return (math.Pi - math.Atan((-y / x))), nil
+                }</span>
+                <span class="cov3" title="2">if x == 0.0 </span><span class="cov1" title="1">{
+                        return (math.Pi / 2), nil
+                }</span>
+                <span class="cov1" title="1">return math.NaN(), errors.Errorf(
+                        "X is not &lt;, &gt; or equal to 0.0. x:=\"%d\"\n\n", x)</span>
+        }
+        <span class="cov8" title="9">if y &lt; 0.0 </span><span class="cov5" title="4">{
+                if x &gt; 0.0 </span><span class="cov1" title="1">{
+                        return (-1 * math.Atan((-y / x))), nil
+                }</span>
+                <span class="cov4" title="3">if x &lt; 0.0 </span><span class="cov1" title="1">{
+                        return (math.Atan((y / x)) - math.Pi), nil
+                }</span>
+                <span class="cov3" title="2">if x == 0.0 </span><span class="cov1" title="1">{
+                        return ((3 * math.Pi) / 2), nil
+                }</span>
+                <span class="cov1" title="1">return math.NaN(), errors.Errorf(
+                        "X is not &lt;, &gt; or equal to 0.0. x:=\"%d\"\n\n", x)</span>
+        }
+        <span class="cov6" title="5">if y == 0.0 </span><span class="cov5" title="4">{
+                if x &gt; 0.0 </span><span class="cov1" title="1">{
+                        return 0.0, nil
+                }</span>
+                <span class="cov4" title="3">if x &lt; 0.0 </span><span class="cov1" title="1">{
+                        return math.Pi, nil
+                }</span>
+                <span class="cov3" title="2">if x == 0.0 </span><span class="cov1" title="1">{
+                        return math.NaN(), ErrSameLocation
+                }</span>
+                <span class="cov1" title="1">return math.NaN(), errors.Errorf("%s. x:=\"%v\"",
+                        "X is not &lt;, &gt; or equal to 0.0", x)</span>
+        }
+        // y is not &lt;, &gt;, or equal to 0.0!
+        <span class="cov1" title="1">return math.NaN(), errors.Errorf("%s  x:=\"%v\", y:=\"%v\"",
+                "X,Y is not &lt;, &gt; or equal to 0.0.", x, y)</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package daemon
+
+import (
+        "log"
+        "math"
+        "time"
+
+        "github.com/larsth/go-gpsfix"
+        "github.com/larsth/go-rmsggpsbinmsg"
+        "github.com/larsth/rmsggpsd-gpspipe/errors"
+)
+
+/*
+calcBearing is a function that calculates the _inital_ bearing
+from point p1(lat1, lon1) to point p2(lat2, lon2) by using the
+haversine algorithm.
+
+The bearing changes at any point between point 1 to
+point 2 and vise versa.
+
+The returned float64 value is the initial bearing in radians (not degrees).
+*/
+func calcBearing(this, other *binmsg.Message) (float64, error) <span class="cov0" title="0">{
+        /*
+                tc1=mod(atan2(sin(lon2-lon1)*cos(lat2),
+                           cos(lat1)*sin(lat2)-sin(lat1)*cos(lat2)*cos(lon2-lon1)), 2*pi)
+
+                Algorithm is from:
+                    http://mathforum.org/library/drmath/view/55417.html : Post #2
+
+                The algorithm had been translated to this pseudo code:
+                           dlon = lon2 -lon1
+                           sin_dlon = sin(dlon)
+                           cos_lat2 = cos(lat2)
+                           cos_lat1 = cos(lat1)
+                           sin_lat2 = sin(lat2)
+                           sin_lat1 = sin(lat1)
+                           cos_dlon = cos(dlon)
+                           atan2_x = sin_dlon*cos_lat2
+                           atan2_y1 = cos_lat1*sin_lat2
+                           atan2_y2 = sin_lat1*cos_lat2*cos_dlon
+                           atan2_y = atan2_y1 - atan2_y2
+                    mod_x = atan2(atan2_x, atan2_y)
+                    mod_y = 2*pi
+                           bearing=mod(mod_x, mod_y)
+        */
+        var (
+                lon1, lat1, lon2, lat2           float64
+                dLon                             float64
+                sinLat2, sinLat1, sinDlon        float64
+                cosLat2, cosLat1, cosDlon        float64
+                atan2x, atan2y1, atan2y2, atan2y float64
+                modX, modY, bearing              float64
+                err                              error
+        )
+
+        lat1 = this.Gps.Lat()
+        lat2 = other.Gps.Lat()
+        lon1 = this.Gps.Lon()
+        lon2 = other.Gps.Lon()
+
+        dLon = lon2 - lon1
+
+        sinDlon = math.Sin(dLon)
+        cosLat2 = math.Cos(lat2)
+        cosLat1 = math.Cos(lat1)
+        sinLat2 = math.Sin(lat2)
+        sinLat1 = math.Sin(lat1)
+        cosDlon = math.Cos(dLon)
+
+        atan2x = sinDlon * cosLat2
+        atan2y1 = cosLat1 * sinLat2
+        atan2y2 = sinLat1 * cosLat2 * cosDlon
+        atan2y = atan2y1 - atan2y2
+
+        if modX, err = atan2(atan2x, atan2y); err != nil </span><span class="cov0" title="0">{
+                return math.NaN(), errors.Trace(err)
+        }</span>
+        <span class="cov0" title="0">modY = math.Pi * 2
+
+        bearing = math.Mod(modX, modY)
+
+        return bearing, nil</span>
+}
+
+func updateBearingCache(this, other *binmsg.Message, logger *log.Logger) <span class="cov0" title="0">{
+        var (
+                useTime    time.Time
+                a, b, c, d bool
+                bearing    float64
+                err        error
+        )
+
+        if this.TimeStamp.Time.Before(other.TimeStamp.Time) </span><span class="cov0" title="0">{
+                useTime = this.TimeStamp.Time
+        }</span><span class="cov0" title="0"> else {
+                useTime = other.TimeStamp.Time
+        }</span>
+
+        <span class="cov0" title="0">a = this.Gps.FixMode == gpsfix.FixNotSeen
+        b = this.Gps.FixMode == gpsfix.FixNone
+        c = this.Gps.FixMode == gpsfix.FixNotSeen
+        d = this.Gps.FixMode == gpsfix.FixNone
+
+        if a || b || c || d </span><span class="cov0" title="0">{
+                bearing = math.NaN()
+        }</span><span class="cov0" title="0"> else {
+                //FIXME
+                /* Also use sentinel values?, ie. : special float64 values outside 360
+                   degrees (2*Pi rad) to give extra information to http request functions?
+                */
+                bearing, err = calcBearing(this, other)
+                if err != nil </span><span class="cov0" title="0">{
+                        logger.Println(err)
+                }</span>
+        }
+        <span class="cov0" title="0">bearingCache.Put(bearing, useTime)</span>
+}
+
+func bearingGoRoutine(logger *log.Logger) <span class="cov0" title="0">{
+        var (
+                this  = binmsg.MkFixNotSeenMessage()
+                other = binmsg.MkFixNotSeenMessage()
+        )
+
+        updateBearingCache(this, other, logger)
+        for </span><span class="cov0" title="0">{
+                select </span>{
+                <span class="cov0" title="0">case this = &lt;-thisChan:
+                        updateBearingCache(this, other, logger)</span>
+                <span class="cov0" title="0">case other = &lt;-otherChan:
+                        updateBearingCache(this, other, logger)</span>
+                }
+        }
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package daemon
+
+import (
+        "math"
+        "time"
+
+        "github.com/larsth/go-rmsggpsbinmsg"
+        "github.com/larsth/rmsggpsd-gpspipe/cache"
+)
+
+var (
+        thisGpsCache  *cache.BinMsg
+        otherGpsCache *cache.BinMsg
+        bearingCache  *cache.Bearing
+        thisChan      chan *binmsg.Message
+        otherChan     chan *binmsg.Message
+)
+
+func init() <span class="cov8" title="1">{
+        thisChan = make(chan *binmsg.Message, 1)
+        otherChan = make(chan *binmsg.Message, 1)
+
+        thisGpsCache, _ = cache.NewBinMsg(thisChan)
+        otherGpsCache, _ = cache.NewBinMsg(otherChan)
+
+        bearingCache = new(cache.Bearing)
+        bearingCache.Put(math.NaN(), time.Unix(0, 0))
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package daemon
+
+import (
+        "encoding/json"
+        "log"
+        "strings"
+        "sync"
+        "time"
+
+        "github.com/larsth/go-gpsdjson"
+        "github.com/larsth/go-gpsfix"
+        "github.com/larsth/go-rmsggpsbinmsg"
+        "github.com/larsth/rmsggpsd-gpspipe/errors"
+)
+
+func mkBinMsg(altitude, latitude, longitude float32,
+        fixMode gpsfix.FixMode, t time.Time) *binmsg.Message <span class="cov0" title="0">{
+        var (
+                m = new(binmsg.Message)
+        )
+
+        m.TimeStamp.Time = t
+        m.Gps.Altitude = altitude
+        m.Gps.Latitude = latitude
+        m.Gps.Longitude = longitude
+        m.Gps.FixMode = fixMode
+
+        return m
+}</span>
+
+type filter interface {
+        ParseGpsdJson(p []byte) (*binmsg.Message, error)
+}
+
+type gpsdFilter struct {
+        mutex       sync.RWMutex
+        logger      *log.Logger
+        gpsdJsonTpv *gpsdjson.TPV
+}
+
+type Class struct {
+        Class string `json:"class"`
+}
+
+func newGpsdFilter(logger *log.Logger) *gpsdFilter <span class="cov0" title="0">{
+        g := new(gpsdFilter)
+        g.logger = logger
+        return g
+}</span>
+
+func (g *gpsdFilter) tpvGpsdJsonToBinMessage() (*binmsg.Message, error) <span class="cov0" title="0">{
+        var (
+                m   *binmsg.Message
+                t   time.Time
+                err error
+        )
+
+        if len(g.gpsdJsonTpv.Time) &gt; 0 </span><span class="cov0" title="0">{
+                t, err = time.Parse(time.RFC3339Nano, g.gpsdJsonTpv.Time)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, errors.Annotate(err,
+                                "Cannot parse gpsd TPV JSON document Time string.")
+                }</span>
+        }<span class="cov0" title="0"> else {
+                t = time.Unix(0, 0)
+        }</span>
+
+        <span class="cov0" title="0">m = mkBinMsg(float32(g.gpsdJsonTpv.Alt),
+                float32(g.gpsdJsonTpv.Lat),
+                float32(g.gpsdJsonTpv.Lon),
+                g.gpsdJsonTpv.Fix,
+                t)
+
+        return m, nil</span>
+}
+
+func (g *gpsdFilter) ParseGpsdJson(p []byte) (*binmsg.Message, error) <span class="cov0" title="0">{
+        var (
+                class Class
+                err   error
+                m     *binmsg.Message
+        )
+
+        g.mutex.Lock()
+        g.mutex.Unlock()
+
+        //log the gpsd JSON document
+        g.logger.Printf("#v", p)
+
+        if err = json.Unmarshal(p, &amp;class); err != nil </span><span class="cov0" title="0">{
+                return nil, errors.Annotate(err,
+                        "Cannot parse gpsd JSON document."+
+                                " Finding \"class\" failed.")
+        }</span>
+
+        <span class="cov0" title="0">if strings.Compare("TPV", class.Class) == 0 </span><span class="cov0" title="0">{
+                if err = json.Unmarshal(p, g.gpsdJsonTpv); err != nil </span><span class="cov0" title="0">{
+                        return nil, errors.Annotate(err,
+                                "Cannot unmarshal a gpsd TPV JSON document.")
+                }</span>
+                <span class="cov0" title="0">if m, err = g.tpvGpsdJsonToBinMessage(); err != nil </span><span class="cov0" title="0">{
+                        return nil, errors.Annotate(err,
+                                `Cannot create a *binmsg.Message `+
+                                        `with data from a gpsd TPV JSON document.`)
+                }</span>
+                <span class="cov0" title="0">return m, nil</span>
+        }
+
+        <span class="cov0" title="0">return nil, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package daemon
+
+import (
+        "fmt"
+        "io"
+        "log"
+        "os"
+        "os/exec"
+        "sync"
+        "time"
+
+        "github.com/larsth/go-rmsggpsbinmsg"
+        "github.com/larsth/linescanner"
+        "github.com/larsth/rmsggpsd-gpspipe/errors"
+        "github.com/larsth/writeerror"
+)
+
+type GpsPipe struct {
+        mutex       sync.Mutex    `json:"-"`
+        hadRunOnce  bool          `json:"-"`
+        cmd         *exec.Cmd     `json:"-"`
+        stdOutPipe  io.ReadCloser `json:"-"`
+        gpsdFilter  filter        `json:"-"`
+        lineScanner *linescanner.LineScanner
+        logger      *log.Logger
+        Config      GpsPipeConfig `json:"gpspipe"`
+}
+
+func (g *GpsPipe) init() error <span class="cov0" title="0">{
+        var (
+                err error
+        )
+
+        if len(g.Config.ExecArgs) == 0 </span><span class="cov0" title="0">{
+                return errors.Annotate(err, `ERROR: `+
+                        `Zero arguments used to run the external gpspipe program.`)
+        }</span>
+        <span class="cov0" title="0">g.cmd = exec.Command(g.Config.ExecFileName, g.Config.ExecArgs...)
+        if g.stdOutPipe, err = g.cmd.StdoutPipe(); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotate(err, "Cannot get the standard OUT pipe"+
+                        "used to read from the the external gpspipe program.")
+        }</span>
+
+        <span class="cov0" title="0">g.gpsdFilter = newGpsdFilter(g.logger)
+        if g.lineScanner, err = linescanner.New(g.stdOutPipe); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotate(err, "Error while initializing the linescanner")
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (g *GpsPipe) Run(logger *log.Logger) error <span class="cov0" title="0">{
+        var (
+                err error
+        )
+        g.mutex.Lock()
+        defer g.mutex.Unlock()
+
+        if !g.hadRunOnce </span><span class="cov0" title="0">{
+                if logger == nil </span><span class="cov0" title="0">{
+                        return errors.New("*log.Logger is nil")
+                }</span>
+                <span class="cov0" title="0">g.logger = logger
+
+                if err = g.init(); err != nil </span><span class="cov0" title="0">{
+                        return errors.Annotate(err, "Cannot init *daemon.GpsPipeCmd")
+                }</span>
+                <span class="cov0" title="0">go gpspipeGoRoutine(g)
+                g.hadRunOnce = true
+                return nil</span>
+        }
+        <span class="cov0" title="0">return errors.Annotatef(ErrIsRunning, "%s: %s",
+                "(ErrIsRunning): Cannot (*daemon.GpsPipeCmd).Run()",
+                "Is already running.")</span>
+}
+
+func goroutineFATAL(err error, msg string) <span class="cov0" title="0">{
+        annotatedErr := errors.Annotate(err, msg)
+        s := errors.Details(annotatedErr)
+        fmt.Fprintln(os.Stderr, s)
+        writeerror.AndExit(annotatedErr, 3)
+        //does not return ...
+}</span>
+
+func pipeInit(g *GpsPipe, d *time.Duration) error <span class="cov0" title="0">{
+        const minDuration = time.Duration(time.Millisecond * 100)
+        var err error
+
+        if err = g.cmd.Start(); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotate(err, "Cannot start "+
+                        "the external gpspipe program.")
+        }</span>
+
+        <span class="cov0" title="0">if g.Config.TickerDuration.D &lt; minDuration </span><span class="cov0" title="0">{
+                *d = minDuration
+        }</span><span class="cov0" title="0"> else {
+                *d = g.Config.TickerDuration.D
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (g *GpsPipe) readJson() (p []byte, err error) <span class="cov0" title="0">{
+        const maxLoops = 128
+
+        for g.lineScanner.Scan() </span><span class="cov0" title="0">{
+                if g.lineScanner.ReadCount() &gt; maxLoops </span><span class="cov0" title="0">{
+                        return nil, errors.Errorf(
+                                "line scanner, maximum of loops exceeded: %d loops",
+                                maxLoops)
+                }</span>
+        }
+        <span class="cov0" title="0">if g.lineScanner.Err() != nil </span><span class="cov0" title="0">{
+                return nil, errors.Annotate(g.lineScanner.Err(), "linescanner error")
+        }</span>
+        <span class="cov0" title="0">return g.lineScanner.Bytes(), nil</span>
+}
+
+func (g *GpsPipe) pipeAction(ticker *time.Ticker) error <span class="cov0" title="0">{
+        var (
+                p   []byte
+                err error
+                m   *binmsg.Message
+        )
+
+        select </span>{
+        <span class="cov0" title="0">case _ = &lt;-ticker.C:
+                if p, err = g.readJson(); err != nil </span><span class="cov0" title="0">{
+                        return errors.Annotate(err, `Cannot read a gpsd JSON document`)
+                }</span>
+                <span class="cov0" title="0">if m, err = g.gpsdFilter.ParseGpsdJson(p); err != nil </span><span class="cov0" title="0">{
+                        return errors.Annotate(err, `Cannot parse a gpsd JSON document`)
+                }</span>
+                <span class="cov0" title="0">if m != nil </span><span class="cov0" title="0">{
+                        //save this GPS coordinate to the cache
+                        thisGpsCache.Put(m)
+                }</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+//pipe is a go routine that read gpsd JSON documents via
+//the external gpspipe program.
+func gpspipeGoRoutine(g *GpsPipe) <span class="cov0" title="0">{
+        var (
+                err    error
+                ticker *time.Ticker
+                d      time.Duration
+        )
+
+        if err = pipeInit(g, &amp;d); err != nil </span><span class="cov0" title="0">{
+                goroutineFATAL(err, "FATAL ERROR, gpspipe go routine: Cannot init")
+                //pipeFATAL does not return, but make it clear that this go routine is killed
+                return
+        }</span>
+
+        <span class="cov0" title="0">ticker = time.NewTicker(d)
+
+        //loop for infinity, or until an error occurs ...
+        for </span><span class="cov0" title="0">{
+                if err = g.pipeAction(ticker); err != nil </span><span class="cov0" title="0">{
+                        msg := "FATAL ERROR, gpspipe go routine, pipe action error"
+                        goroutineFATAL(err, msg)
+                        //pipeFATAL does not return, but make it clear that this go routine is killed
+                        return
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package daemon
+
+import (
+        "fmt"
+        "io/ioutil"
+        "log"
+        "math"
+        "net/http"
+        "net/url"
+        "os"
+        "strconv"
+        "time"
+
+        "github.com/larsth/go-gpsfix"
+        "github.com/larsth/go-rmsggpsbinmsg"
+        "github.com/larsth/rmsggpsd-gpspipe/errors"
+)
+
+var ErrNoSuchUrlKey = errors.New("No such url.Values key")
+
+func parseFloat32FromUrlValue(v url.Values, key string) (float32, string, error) <span class="cov0" title="0">{
+        var (
+                NaN float32 = float32(math.NaN())
+                s   string
+                err error
+                f   float64
+        )
+        if s = v.Get(key); len(s) == 0 </span><span class="cov0" title="0">{
+                return NaN, s, errors.Annotatef(ErrNoSuchUrlKey,
+                        "url.Values[%s] not found", key)
+        }</span>
+        <span class="cov0" title="0">if f, err = strconv.ParseFloat(s, 32); err != nil </span><span class="cov0" title="0">{
+                return NaN, s, errors.Annotatef(err,
+                        "cannot parse url value: '%s' from key: '%s' %s",
+                        s, key, `to a floating point 32-bit value`)
+        }</span>
+        <span class="cov0" title="0">return float32(f), "", nil</span>
+}
+
+func makeBinMsgFromUrlValues(v url.Values) (*binmsg.Message, error) <span class="cov0" title="0">{
+        var (
+                err        error
+                alt        float32
+                lat        float32
+                lon        float32
+                gpsfixmode string
+                fixmode    gpsfix.FixMode
+                gpstime    string
+                t          time.Time
+                value      string
+        )
+
+        alt, value, err = parseFloat32FromUrlValue(v, "gpsaltitude")
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errors.Annotatef(err, "%s %s %s",
+                        `Cannot parse altitude string`,
+                        value,
+                        `into a floating point 32 bit value`)
+        }</span>
+        <span class="cov0" title="0">lat, value, err = parseFloat32FromUrlValue(v, "gpslatitude")
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errors.Annotatef(err, "%s %s %s",
+                        `Cannot parse latitide string`,
+                        value,
+                        `into a floating point 32 bit value`)
+        }</span>
+        <span class="cov0" title="0">lon, value, err = parseFloat32FromUrlValue(v, "gpslongitude")
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errors.Annotatef(err, "%s %s %s",
+                        `Cannot parse longitude string`,
+                        value,
+                        `into a floating point 32 bit value`)
+        }</span>
+        <span class="cov0" title="0">gpsfixmode = v.Get("gpsfixmode")
+        if len(gpsfixmode) == 0 </span><span class="cov0" title="0">{
+                return nil, errors.New(
+                        `The value from the "fixmode" key does not exist, or is empty`)
+        }</span>
+        <span class="cov0" title="0">fixmode, err = gpsfix.Parse(gpsfixmode)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errors.Annotate(err, "Cannot parse fixmode string")
+        }</span>
+        <span class="cov0" title="0">gpstime = v.Get("gpstime")
+        if len(gpstime) == 0 </span><span class="cov0" title="0">{
+                return nil, errors.New(
+                        `The value from the "time" key does not exist, or is empty`)
+        }</span>
+        <span class="cov0" title="0">t, err = time.Parse(time.RFC3339, gpstime)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errors.Annotatef(err, "%s %s",
+                        `Could not parse RFC3339 ("2006-01-02T15:04:05Z07:00")`,
+                        `encoded time string`)
+        }</span>
+
+        <span class="cov0" title="0">return mkBinMsg(alt, lat, lon, fixmode, t), nil</span>
+}
+
+func handleHttpClientResponse(addr string) error <span class="cov0" title="0">{
+        var (
+                r      *http.Response
+                err    error
+                body   []byte
+                sbody  string
+                values url.Values
+                m      *binmsg.Message
+        )
+
+        if r, err = http.DefaultClient.Get(addr); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotatef(err, "%s: %s",
+                        `Cannot HTTP GET from web server`, addr)
+        }</span>
+        <span class="cov0" title="0">defer r.Body.Close()
+
+        if body, err = ioutil.ReadAll(r.Body); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotatef(err, "%s: %s",
+                        `Cannot read the HTTP body (NOT HTML!) fetched from web server`,
+                        addr)
+        }</span>
+        <span class="cov0" title="0">sbody = string(body)
+
+        if r.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+                return errors.Errorf("%s: %s.\n\tStatus Code: %d\n\tHTTP body: %s\n",
+                        `Rmsggpsd HTTP client`,
+                        `Recieved something else than status code "200 OK"`,
+                        r.StatusCode,
+                        sbody)
+        }</span>
+        <span class="cov0" title="0">if values, err = url.ParseQuery(sbody); err != nil </span><span class="cov0" title="0">{
+                return errors.Errorf("%s: %s: %s.\n\tHTTP body: %s\n",
+                        `Rmsggpsd HTTP client: `,
+                        `Could not parse Content-Type (MIME encoding: `,
+                        `'application/x-www-form-urlencoded')`,
+                        sbody)
+        }</span>
+        <span class="cov0" title="0">if m, err = makeBinMsgFromUrlValues(values); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotate(err,
+                        `Cannot make a binmsg.Message with keys from "+ 
+            "the associative array of url values`)
+        }</span>
+        <span class="cov0" title="0">otherGpsCache.Put(m)
+        return nil</span>
+}
+
+func httpClient(c *JsonConfig, logger *log.Logger) <span class="cov0" title="0">{
+        const minDuration = time.Millisecond * 5
+        var (
+                addr           string
+                tickerDuration time.Duration
+                ticker         *time.Ticker
+        )
+
+        // c, and logger must be non nil pointers
+        if logger == nil </span><span class="cov0" title="0">{
+                s := "Other gps http client: logger of type *log.logger is nil."
+                fmt.Fprintln(os.Stderr, s)
+                os.Exit(3)
+                return
+        }</span>
+        <span class="cov0" title="0">if c == nil </span><span class="cov0" title="0">{
+                s := "Other gps http client. *daemon.JsonConfig is nil"
+                logger.Println(s)
+                fmt.Fprintln(os.Stderr, s)
+                os.Exit(4)
+                return
+        }</span>
+
+        <span class="cov0" title="0">addr = c.OtherGps.AddrString
+
+        tickerDuration = c.OtherGps.TickerDuration.D
+        if tickerDuration.Nanoseconds() &lt; minDuration.Nanoseconds() </span><span class="cov0" title="0">{
+                tickerDuration = minDuration
+        }</span>
+        <span class="cov0" title="0">ticker = time.NewTicker(tickerDuration)
+
+        for </span><span class="cov0" title="0">{
+                select </span>{
+                <span class="cov0" title="0">case _ = &lt;-ticker.C:
+                        if err := handleHttpClientResponse(addr); err != nil </span><span class="cov0" title="0">{
+                                details := errors.Details(err)
+                                logger.Println(details)
+                        }</span>
+                }
+        }
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package daemon
+
+import (
+        "bytes"
+        "encoding/json"
+        "io"
+        "os"
+        "strings"
+
+        "github.com/larsth/go-gpsdjson"
+        "github.com/larsth/go-gpsfix"
+        "github.com/larsth/rmsggpsd-gpspipe/errors"
+)
+
+type (
+        ApplicationConfig struct {
+                Name    string `json:"name"`
+                Version string `json:"version"`
+        }
+
+        AddrLoggerConfig struct {
+                AddrString     string            `json:"addr"`
+                LoggerString   string            `json:"logger"`
+                TickerDuration gpsdjson.Duration `json:"ticker-duration"`
+        }
+
+        GpsCoordConfig struct {
+                Alt     float32        `json:"altitude"`
+                Lat     float32        `json:"latitude"`
+                Lon     float32        `json:"longitude"`
+                FixMode gpsfix.FixMode `json:"fixmode,string"`
+        }
+
+        GpsPipeConfig struct {
+                ExecFileName   string            `json:"exec-filename"`
+                ExecArgs       []string          `json:"exec-args"`
+                TickerDuration gpsdjson.Duration `json:"ticker-duration,string"`
+                Logger         string            `json:"logger"`
+        }
+
+        JsonConfig struct {
+                Application ApplicationConfig `json:"application"`
+                Httpd       AddrLoggerConfig  `json:"httpd"`
+                OtherGps    AddrLoggerConfig  `json:"other-gps"`
+                GpsPipe     *GpsPipe          `json:"gpspipe"`
+                ThisGps     *GpsCoordConfig   `json:"this-gps"`
+        }
+)
+
+const (
+        envVarName          = `RMSGGPSD_JSONCONF`
+        expectedJsonVersion = `1.0.0`
+)
+
+func checkIsRmsggpsdJsonDocument(a *ApplicationConfig) error <span class="cov0" title="0">{
+        if strings.Compare("rmsggpsd", a.Name) != 0 </span><span class="cov0" title="0">{
+                return errors.Errorf("%s./nWant: \"rmsggpsd\"\nGot: \"%s\"",
+                        `Invalid application name in the JSON document: `,
+                        a.Name)
+        }</span>
+
+        <span class="cov0" title="0">if strings.Compare(expectedJsonVersion, a.Version) != 0 </span><span class="cov0" title="0">{
+                return errors.Errorf("%s./nWant: \"%s\"\nGot: \"%s\"",
+                        `Invalid application version in the JSON document: `,
+                        expectedJsonVersion,
+                        a.Version)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func readJsonConfigDocument(c *JsonConfig) error <span class="cov0" title="0">{
+        var (
+                fileName string
+                ok       bool
+                err      error
+                file     *os.File
+                buf      bytes.Buffer
+                p        []byte
+        )
+
+        if fileName, ok = os.LookupEnv(envVarName); !ok </span><span class="cov0" title="0">{
+                return errors.Errorf("%s '%s' %s.",
+                        "The enviroment variable", envVarName,
+                        "does not exists")
+        }</span>
+
+        <span class="cov0" title="0">if len(fileName) == 0 </span><span class="cov0" title="0">{
+                return errors.Errorf("%s '%s' %s.",
+                        "The enviroment variable", envVarName,
+                        "has no content")
+        }</span>
+
+        <span class="cov0" title="0">if file, err = os.Open(fileName); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotate(err,
+                        `Cannot open the JSON configuration file.`)
+        }</span>
+        <span class="cov0" title="0">defer file.Close()
+
+        if _, err = io.Copy(&amp;buf, file); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotate(err,
+                        `Cannot read (copy into memory) the content of the JSON configuration file.`)
+        }</span>
+        <span class="cov0" title="0">p = append(p, buf.Bytes()...)
+
+        if err = json.Unmarshal(p, c); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotate(err,
+                        `Cannot unmarshal the JSON configuration file.`)
+        }</span>
+
+        <span class="cov0" title="0">if err = checkIsRmsggpsdJsonDocument(&amp;c.Application); err != nil </span><span class="cov0" title="0">{
+                return errors.Trace(err)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package daemon
+
+import (
+        "log"
+        "net/http"
+        "time"
+
+        "github.com/gorilla/mux"
+        "github.com/larsth/go-rmsggpsbinmsg"
+        _ "github.com/larsth/rmsggpsd-gpspipe/cache"
+        "github.com/larsth/rmsggpsd-gpspipe/errors"
+)
+
+var (
+        httpd  http.Server
+        router mux.Router
+)
+
+var HttpdLogger *log.Logger
+
+func startGpsppipe(gpspipeLogger *log.Logger, c *JsonConfig) error <span class="cov0" title="0">{
+        var (
+                err error
+        )
+        if c.GpsPipe != nil </span><span class="cov0" title="0">{
+                if err = c.GpsPipe.Run(gpspipeLogger); err != nil </span><span class="cov0" title="0">{
+                        return errors.Annotate(err,
+                                `Cannot start external gpspipe command.`)
+                }</span>
+        }
+        <span class="cov0" title="0">go gpspipeGoRoutine(c.GpsPipe)
+        return nil</span>
+}
+
+// Configure, and start the web server ...
+func startHttpd(addr string) error <span class="cov0" title="0">{
+        var (
+                err error
+        )
+
+        (&amp;router).HandleFunc("/", httpRequestHandler)
+
+        (&amp;httpd).Addr = addr
+        (&amp;httpd).Handler = &amp;router
+        (&amp;httpd).ReadTimeout = 30 * time.Second
+        (&amp;httpd).WriteTimeout = 30 * time.Second
+        /* MaxHeaderBytes: 1 &lt;&lt; 12 = 4096 bytes, which is usually one OS page */
+        (&amp;httpd).MaxHeaderBytes = 1 &lt;&lt; 12
+        (&amp;httpd).SetKeepAlivesEnabled(true)
+
+        if err = (&amp;httpd).ListenAndServe(); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotate(err,
+                        `Cannot start the web server.`)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func Start(gpspipeLogger, otherGpslogger *log.Logger, c *JsonConfig) error <span class="cov0" title="0">{
+        var (
+                err error
+                m   *binmsg.Message
+        )
+
+        if err = readJsonConfigDocument(c); err != nil </span><span class="cov0" title="0">{
+                return errors.Annotate(err,
+                        `Error reading the JSON configuration file.`)
+        }</span>
+
+        <span class="cov0" title="0">if c.GpsPipe == nil &amp;&amp; c.ThisGps == nil </span><span class="cov0" title="0">{
+                return errors.Annotatef(err, "%s, &amp;s: Nothing to do!",
+                        `Both the "gpspipe"`,
+                        `and the "this-gps" JSON objects does not exists`)
+        }</span>
+
+        <span class="cov0" title="0">if c.ThisGps != nil </span><span class="cov0" title="0">{
+                m = mkBinMsg(c.ThisGps.Alt,
+                        c.ThisGps.Lat,
+                        c.ThisGps.Lon,
+                        c.ThisGps.FixMode,
+                        time.Now().UTC())
+                thisGpsCache.Put(m)
+        }</span>
+
+        //start the 'other GPS' HTTP client
+        <span class="cov0" title="0">go httpClient(c, otherGpslogger)
+
+        if err = startGpsppipe(gpspipeLogger, c); err != nil </span><span class="cov0" title="0">{
+                return errors.Trace(err)
+        }</span>
+
+        //Last thing to do:
+        <span class="cov0" title="0">if err = startHttpd(c.Httpd.AddrString); err != nil </span><span class="cov0" title="0">{
+                return errors.Trace(err)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package daemon
+
+import (
+        "fmt"
+        "log"
+        "net/http"
+        "net/url"
+        "strconv"
+        "strings"
+        "time"
+
+        "github.com/larsth/go-rmsggpsbinmsg"
+        "github.com/larsth/rmsggpsd-gpspipe/cache"
+)
+
+const rfc7231 = `Mon, 06 Jan 2006 15:04:05 GMT`
+
+func isGETHttpMethod(req *http.Request, w http.ResponseWriter) (ok bool) <span class="cov0" title="0">{
+        var msg string
+
+        if strings.Compare("GET", req.Method) != 0 </span><span class="cov0" title="0">{
+                msg = fmt.Sprintf("Method %s is not allowed", req.Method)
+                http.Error(w, msg, http.StatusMethodNotAllowed)
+                log.Println(msg)
+                return false
+        }</span>
+        <span class="cov0" title="0">return true</span>
+}
+
+func parseForm(req *http.Request, w http.ResponseWriter) (ok bool) <span class="cov0" title="0">{
+        var (
+                err error
+                msg string
+        )
+        if err = req.ParseForm(); err != nil </span><span class="cov0" title="0">{
+                msg = fmt.Sprintf("Cannot parse HTTP GET query, Error %s.", err.Error())
+                http.Error(w, msg, http.StatusInternalServerError)
+                HttpdLogger.Println(msg)
+                return false
+        }</span>
+        <span class="cov0" title="0">return true</span>
+}
+
+func writeXWwwFormUrlencodedHttpResponse(
+        w http.ResponseWriter,
+        nowUTC time.Time,
+        thisgpscache *cache.BinMsg,
+        bearingcache *cache.Bearing) <span class="cov0" title="0">{
+        var (
+                m                               *binmsg.Message
+                fixmode, alt, lat, lon, gpstime string
+                tBearing                        string
+                bearing                         string
+                values                          url.Values
+                p                               []byte
+                pLen                            string
+        )
+
+        m = thisgpscache.Get()
+        fixmode, alt, lat, lon, gpstime = m.Strings()
+        _, _, bearing, tBearing = bearingcache.Get()
+
+        values.Set("bearing", bearing)
+        values.Set("bearingtime", tBearing)
+        values.Set("gpsaltitude", alt)
+        values.Set("gpsfixmode", fixmode)
+        values.Set("gpslatitude", lat)
+        values.Set("gpslongitude", lon)
+        values.Set("gpstime", gpstime)
+
+        w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+        w.Header().Set("Cache-Control", "no-cache")
+
+        w.Header().Set("Date", nowUTC.Format(rfc7231))
+        w.Header().Set("Date-RFC-3339", nowUTC.Format(time.RFC3339))
+        w.Header().Set("Date-RFC3339-Nano", nowUTC.Format(time.RFC3339Nano))
+
+        p = []byte(values.Encode())
+        pLen = strconv.Itoa(len(p))
+        w.Header().Set("Content-Length", pLen)
+        w.WriteHeader(http.StatusOK)
+        _, _ = w.Write(p)
+
+        return
+}</span>
+
+func httpRequestHandler(w http.ResponseWriter, req *http.Request) <span class="cov0" title="0">{
+        var nowUTC = time.Now().UTC()
+
+        if !isGETHttpMethod(req, w) </span><span class="cov0" title="0">{
+                return //response had already been written
+        }</span>
+        <span class="cov0" title="0">if !parseForm(req, w) </span><span class="cov0" title="0">{
+                return //response had already been written
+        }</span>
+        //NOTE: thisGpsCache, and bearingCache are package visible variables
+        <span class="cov0" title="0">writeXWwwFormUrlencodedHttpResponse(w, nowUTC, thisGpsCache, bearingCache)</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

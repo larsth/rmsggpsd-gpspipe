@@ -7,7 +7,6 @@ import (
 
 	"github.com/larsth/go-gpsfix"
 	"github.com/larsth/go-rmsggpsbinmsg"
-	"github.com/larsth/rmsggpsd-gpspipe/cache"
 	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
@@ -120,8 +119,8 @@ func updateBearingCache(this, other *binmsg.Message, logger *log.Logger) {
 
 func bearingGoRoutine(logger *log.Logger) {
 	var (
-		this  = cache.MkFixNotSeenMessage()
-		other = cache.MkFixNotSeenMessage()
+		this  = binmsg.MkFixNotSeenMessage()
+		other = binmsg.MkFixNotSeenMessage()
 	)
 
 	updateBearingCache(this, other, logger)
