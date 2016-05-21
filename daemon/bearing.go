@@ -7,6 +7,7 @@ import (
 
 	"github.com/larsth/go-gpsfix"
 	"github.com/larsth/go-rmsggpsbinmsg"
+	"github.com/larsth/rmsggpsd-gpspipe/cache"
 	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
 
@@ -83,7 +84,7 @@ func calcBearing(this, other *binmsg.Message) (float64, error) {
 	return bearing, nil
 }
 
-func updateBearingCache(this, other *binmsg.Message, logger *log.Logger) {
+func updateBearingCache(this, other *binmsg.Message, logger *log.Logger, bc *cache.Bearing) {
 	var (
 		useTime    time.Time
 		a, b, c, d bool
@@ -114,7 +115,7 @@ func updateBearingCache(this, other *binmsg.Message, logger *log.Logger) {
 			logger.Println(err)
 		}
 	}
-	bearingCache.Put(bearing, useTime)
+	bc.Put(bearing, useTime)
 }
 
 func bearingGoRoutine(logger *log.Logger) {
@@ -123,13 +124,13 @@ func bearingGoRoutine(logger *log.Logger) {
 		other = binmsg.MkFixNotSeenMessage()
 	)
 
-	updateBearingCache(this, other, logger)
+	updateBearingCache(this, other, logger, bearingCache)
 	for {
 		select {
 		case this = <-thisChan:
-			updateBearingCache(this, other, logger)
+			updateBearingCache(this, other, logger, bearingCache)
 		case other = <-otherChan:
-			updateBearingCache(this, other, logger)
+			updateBearingCache(this, other, logger, bearingCache)
 		}
 	}
 }
