@@ -73,7 +73,7 @@ func Start(gpspipeLogger, otherGpslogger *log.Logger, c *JsonConfig) error {
 	}
 
 	if c.ThisGps != nil {
-		m = mkBinMsg(c.ThisGps.Alt,
+		m = binmsg.MkBinMsg(c.ThisGps.Alt,
 			c.ThisGps.Lat,
 			c.ThisGps.Lon,
 			c.ThisGps.FixMode,

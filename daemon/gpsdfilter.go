@@ -8,25 +8,9 @@ import (
 	"time"
 
 	"github.com/larsth/go-gpsdjson"
-	"github.com/larsth/go-gpsfix"
 	"github.com/larsth/go-rmsggpsbinmsg"
 	"github.com/larsth/rmsggpsd-gpspipe/errors"
 )
-
-func mkBinMsg(altitude, latitude, longitude float32,
-	fixMode gpsfix.FixMode, t time.Time) *binmsg.Message {
-	var (
-		m = new(binmsg.Message)
-	)
-
-	m.TimeStamp.Time = t
-	m.Gps.Altitude = altitude
-	m.Gps.Latitude = latitude
-	m.Gps.Longitude = longitude
-	m.Gps.FixMode = fixMode
-
-	return m
-}
 
 type filter interface {
 	ParseGpsdJson(p []byte) (*binmsg.Message, error)
@@ -65,7 +49,7 @@ func (g *gpsdFilter) tpvGpsdJsonToBinMessage() (*binmsg.Message, error) {
 		t = time.Unix(0, 0)
 	}
 
-	m = mkBinMsg(float32(g.gpsdJsonTpv.Alt),
+	m = binmsg.MkBinMsg(float32(g.gpsdJsonTpv.Alt),
 		float32(g.gpsdJsonTpv.Lat),
 		float32(g.gpsdJsonTpv.Lon),
 		g.gpsdJsonTpv.Fix,

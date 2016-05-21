@@ -92,7 +92,7 @@ func makeBinMsgFromUrlValues(v url.Values) (*binmsg.Message, error) {
 			`encoded time string`)
 	}
 
-	return mkBinMsg(alt, lat, lon, fixmode, t), nil
+	return binmsg.MkBinMsg(alt, lat, lon, fixmode, t), nil
 }
 
 func handleHttpClientResponse(addr string) error {
